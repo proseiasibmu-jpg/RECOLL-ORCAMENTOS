@@ -3032,41 +3032,6 @@ window.recollLimparCalculadora=function(){
 };
 
 })();
-// ===== ASSISTENTE DE ORÇAMENTO RECOLL =====
-let recollAssistHistory=[];
-function recollAssistQuoteContext(){
-  try{
-    if(!currentQuote)return 'Nenhum orçamento foi calculado ainda.';
-    return JSON.stringify({cliente:currentQuote.client||'',cidade:currentQuote.city||'',endereco:currentQuote.address||'',servico:currentQuote.service||'',itens:currentQuote.items||[],total:currentQuote.total||0,observacoes:currentQuote.obs||''});
-  }catch(e){return 'Não foi possível ler o orçamento atual.'}
-}
-function recollAssistRender(){
-  const box=$('assistantChat'); if(!box)return; box.innerHTML='';
-  recollAssistHistory.forEach(m=>{const d=document.createElement('div');d.className='msg '+(m.role==='user'?'user':'bot');d.textContent=m.content;box.appendChild(d)});
-  box.scrollTop=box.scrollHeight;
-}
-function recollAbrirAssistente(){
-  show('assistenteOrcamento');
-  const ctx=$('assistantContext');
-  const q=recollAssistQuoteContext();
-  if(ctx){ctx.style.display=currentQuote?'block':'none';ctx.textContent=currentQuote?'Orçamento atual carregado. Vou considerar os dados dele para te ajudar.':'';}
-  if(!recollAssistHistory.length){recollAssistHistory=[{role:'assistant',content:'Olá! Sou o Assistente de Orçamento da RECOLL. Me conte o serviço, quantidade, equipe, dias, dificuldade e custos que você já conhece. Eu te ajudo a chegar a um preço comercial — e você decide o valor final.'}];recollAssistRender()}
-}
-function recollAssistQuick(t){$('assistantMessage').value=t;recollAssistSend()}
-async function recollAssistSend(){
-  const input=$('assistantMessage'), msg=(input.value||'').trim(); if(!msg)return;
-  recollAssistHistory.push({role:'user',content:msg}); recollAssistRender(); input.value='';
-  const status=$('assistantStatus'); status.textContent='Analisando o orçamento...';
-  try{
-    const r=await fetch('/.netlify/functions/recoll-assistente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:recollAssistHistory,quoteContext:recollAssistQuoteContext()})});
-    const data=await r.json(); if(!r.ok)throw new Error(data.error||'Erro ao falar com o assistente.');
-    recollAssistHistory.push({role:'assistant',content:data.content||'Não consegui responder agora.'}); recollAssistRender(); status.textContent='';
-  }catch(e){
-    recollAssistHistory.push({role:'assistant',content:'Não consegui conectar ao assistente agora. Se você acabou de publicar esta versão, verifique a configuração da chave da OpenAI no Netlify.'}); recollAssistRender(); status.textContent='';
-  }
-}
-function recollAssistClear(){recollAssistHistory=[];recollAbrirAssistente()}
-function recollAssistToQuote(){show('new')}
-</script>
+\n// ===== ASSISTENTE DE ORÇAMENTO RECOLL =====\nlet recollAssistHistory=[];\nfunction recollAssistQuoteContext(){\n  try{\n    if(!currentQuote)return 'Nenhum orçamento foi calculado ainda.';\n    return JSON.stringify({cliente:currentQuote.client||'',cidade:currentQuote.city||'',endereco:currentQuote.address||'',servico:currentQuote.service||'',itens:currentQuote.items||[],total:currentQuote.total||0,observacoes:currentQuote.obs||''});\n  }catch(e){return 'Não foi possível ler o orçamento atual.'}\n}\nfunction recollAssistRender(){\n  const box=$('assistantChat'); if(!box)return; box.innerHTML='';\n  recollAssistHistory.forEach(m=>{const d=document.createElement('div');d.className='msg '+(m.role==='user'?'user':'bot');d.textContent=m.content;box.appendChild(d)});\n  box.scrollTop=box.scrollHeight;\n}\nfunction recollAbrirAssistente(){\n  show('assistenteOrcamento');\n  const ctx=$('assistantContext');\n  const q=recollAssistQuoteContext();\n  if(ctx){ctx.style.display=currentQuote?'block':'none';ctx.textContent=currentQuote?'Orçamento atual carregado. Vou considerar os dados dele para te ajudar.':'';}\n  if(!recollAssistHistory.length){recollAssistHistory=[{role:'assistant',content:'Olá! Sou o Assistente de Orçamento da RECOLL. Me conte o serviço, quantidade, equipe, dias, dificuldade e custos que você já conhece. Eu te ajudo a chegar a um preço comercial — e você decide o valor final.'}];recollAssistRender()}\n}\nfunction recollAssistQuick(t){$('assistantMessage').value=t;recollAssistSend()}\nasync function recollAssistSend(){\n  const input=$('assistantMessage'), msg=(input.value||'').trim(); if(!msg)return;\n  recollAssistHistory.push({role:'user',content:msg}); recollAssistRender(); input.value='';\n  const status=$('assistantStatus'); status.textContent='Analisando o orçamento...';\n  try{\n    const r=await fetch('/.netlify/functions/recoll-assistente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:recollAssistHistory,quoteContext:recollAssistQuoteContext()})});\n    const data=await r.json(); if(!r.ok)throw new Error(data.error||'Erro ao falar com o assistente.');\n    recollAssistHistory.push({role:'assistant',content:data.content||'Não consegui responder agora.'}); recollAssistRender(); status.textContent='';\n  }catch(e){\n    recollAssistHistory.push({role:'assistant',content:'Não consegui conectar ao assistente agora. Se você acabou de publicar esta versão, verifique a configuração da chave da OpenAI no Netlify.'}); recollAssistRender(); status.textContent='';\n  }\n}\nfunction recollAssistClear(){recollAssistHistory=[];recollAbrirAssistente()}\nfunction recollAssistToQuote(){show('new')}\n</script>
 </body>
 </html>
