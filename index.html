@@ -531,9 +531,8 @@ function setSinapiUnit(key,v){const s=sinapiSelectedServices.find(x=>x.key===key
 function setSinapiRef(key,codigo){const s=sinapiSelectedServices.find(x=>x.key===key);if(s){s.refSelecionada=codigo||'';renderSinapiServices();}}
 function sinapiLoadRecollPrice(s){
  // Não utilizar a tabela comercial RECOLL neste módulo.
- // O preço será preenchido somente quando houver composição SINAPI oficial com parcela de mão de obra identificada.
  if(s.price===undefined)s.price=null;
- s.priceSource='Aguardando composição SINAPI oficial — parcela de mão de obra.';
+ if(s.price===null||s.price===undefined)s.priceSource='Aguardando composição SINAPI e valores de referência.';
 }
 const SINAPI_RATES_SP_202610={
  'desonerado':{'88256':35.02,'88316':30.48},
