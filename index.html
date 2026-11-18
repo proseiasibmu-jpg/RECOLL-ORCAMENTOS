@@ -249,6 +249,14 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 </div>
 <div id="legacyServiceArea" style="display:none"><label>Serviço</label><select id="service" onchange="fields()"><option value="floor">Piso / Revestimento</option><option value="clean">Limpeza pós-obra</option><option value="paint">Pintura</option><option value="electric">Elétrica</option><option value="hydraulic">Hidráulica</option><option value="masonry">Alvenaria</option><option value="other">Outro serviço</option></select><div id="dynamic"></div></div>
 
+<div class="card" id="recollAIBox" style="padding:14px;background:#f1f6ff;border:1px solid #cbdcff;margin-top:14px">
+<h3 style="margin:0 0 6px;color:#123c91">🤖 Assistente inteligente de orçamento</h3>
+<p class="small">Descreva o serviço como você explicaria para mim. A IA sugere preço de mão de obra e calcula o total. Você confere antes de adicionar.</p>
+<label for="recollAIRequest">O que vamos executar?</label>
+<textarea id="recollAIRequest" rows="4" placeholder="Ex.: Assentamento de porcelanato 60x60 em 470 m², obra comercial, piso nivelado..."></textarea>
+<button class="primary" type="button" id="recollAIButton" onclick="recollAskAI()">✨ Calcular com IA</button>
+<div id="recollAIAnswer" style="margin-top:10px"></div>
+</div>
 <h3>Itens do orçamento</h3>
 <div id="quoteItems"></div>
 <div class="row" style="flex-wrap:wrap;gap:8px"><button class="gray" onclick="addQuoteItem()">➕ Adicionar item</button><button class="primary" onclick="addCustomQuoteService()">＋ Cadastrar novo serviço</button></div>
@@ -611,6 +619,59 @@ function setQuoteItemService(id,index){
 }
 function setQuoteItem(id,k,v){let it=quoteItems.find(x=>x.id===id);if(!it)return;it[k]=(k==='qty'||k==='price')?(parseFloat(String(v).replace(',','.'))||0):v;renderQuoteItems();}
 function removeQuoteItem(id){quoteItems=quoteItems.filter(x=>x.id!==id);renderQuoteItems();}
+
+
+let recollAIItems=[];
+function recollAIescape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+async function recollAskAI(){
+ const field=$('recollAIRequest'), answer=$('recollAIAnswer'), button=$('recollAIButton');
+ const request=(field?.value||'').trim();
+ if(!request){alert('Descreva o serviço que deseja orçar.');return;}
+ const context={
+  city:$('city')?.value||'',
+  kind:$('kind')?.value||'',
+  address:$('address')?.value||'',
+  clientMaterial:!!$('clientMaterial')?.checked,
+  quantityAndUnit:request,
+  existingItems:quoteItems.map(x=>({description:x.desc,quantity:x.qty,unit:x.unit,unitPrice:x.price}))
+ };
+ button.disabled=true;button.textContent='Analisando serviço...';
+ answer.innerHTML='<div class="small">Estou avaliando a mão de obra, produtividade, dificuldade e preço comercial.</div>';
+ try{
+  const response=await fetch('/.netlify/functions/recoll-assistente',{
+   method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({messages:[{role:'user',content:request}],quoteContext:JSON.stringify(context)})
+  });
+  const data=await response.json();
+  if(!response.ok) throw new Error(data.content||'Não foi possível calcular agora.');
+  let result;
+  try{result=JSON.parse(data.content||'{}');}
+  catch(e){throw new Error(data.content||'A resposta do assistente veio em formato inesperado.');}
+  recollAIItems=Array.isArray(result.items)?result.items:[];
+  const message=recollAIescape(result.message||'Análise concluída.');
+  const notes=result.notes?'<p class="small">'+recollAIescape(result.notes)+'</p>':'';
+  let rows='';
+  if(recollAIItems.length){
+   rows='<div style="margin-top:10px">'+recollAIItems.map((it,i)=>'<div class="item"><b>'+recollAIescape(it.description||'Serviço')+'</b><p class="small">'+recollAIescape(it.quantity)+' '+recollAIescape(it.unit||'serviço')+' × '+brl(it.unit_price)+'</p><b>'+brl((Number(it.quantity)||0)*(Number(it.unit_price)||0))+'</b></div>').join('')+'</div><button type="button" class="green" style="width:100%" onclick="recollAIAddItems()">＋ Adicionar ao orçamento</button>';
+  }
+  answer.innerHTML='<div class="item" style="background:#fff"><b>Recomendação da IA</b><p>'+message+'</p>'+notes+rows+'</div>';
+ }catch(error){
+  answer.innerHTML='<div class="item" style="border-color:#e6b5b5;color:#8a2525">Não consegui concluir: '+recollAIescape(error.message)+'. Confira sua conexão e tente novamente.</div>';
+ }finally{button.disabled=false;button.textContent='✨ Calcular com IA';}
+}
+function recollAIAddItems(){
+ if(!recollAIItems.length){alert('Ainda não há itens calculados para adicionar.');return;}
+ recollAIItems.forEach(it=>{
+  const qty=Number(String(it.quantity??1).replace(',','.'))||1;
+  const price=Number(String(it.unit_price??0).replace(',','.'))||0;
+  quoteItems.push({id:++quoteItemCounter,category:'Serviços diversos',desc:String(it.description||'Serviço sugerido pela IA'),qty,unit:String(it.unit||'serviço'),price});
+ });
+ if(!RECOLL_TABELA_REFERENCIA['Serviços diversos']) RECOLL_TABELA_REFERENCIA['Serviços diversos']=[];
+ recollAIItems.forEach(it=>RECOLL_TABELA_REFERENCIA['Serviços diversos'].push({desc:String(it.description||'Serviço sugerido pela IA'),unit:String(it.unit||'serviço'),price:Number(it.unit_price)||0}));
+ renderQuoteItems();
+ $('recollAIAnswer').innerHTML='<div class="small">Itens adicionados ao orçamento. Confira as quantidades e os valores antes de calcular e salvar.</div>';
+ document.getElementById('quoteItems')?.scrollIntoView({behavior:'smooth',block:'start'});
+}
 
 function quoteItemsTotal(){return quoteItems.reduce((a,x)=>a+x.qty*x.price,0);}
 
