@@ -522,6 +522,7 @@ function toggleSinapiService(c,i,on){
  } else {
    sinapiSelectedServices=sinapiSelectedServices.filter(s=>s.key!==key);
  }
+ applySinapiRates();
  renderSinapiServices();
 }
 function setSinapiQty(key,v){const s=sinapiSelectedServices.find(x=>x.key===key);if(s){const n=parseFloat(String(v).replace(',','.'));s.qty=Number.isFinite(n)?n:0;}}
