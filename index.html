@@ -254,6 +254,8 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 <div id="sinapiPanel" style="display:none;margin-top:12px">
 <p class="small"><b>Orçamento pela SINAPI.</b> Selecione a cidade da obra e os serviços. A referência de preço será a composição SINAPI, considerando somente a parcela de mão de obra.</p>
 <label>Cidade de referência</label><input id="sinapiCity" type="text" placeholder="Digite a cidade da obra" value="">
+<label>Regime de encargos sociais</label><select id="sinapiRegime"><option value="nao_desonerado">Não desonerado (onerado)</option><option value="desonerado">Desonerado</option></select>
+<p class="small">A cidade e o regime serão usados para selecionar a referência SINAPI. O preço só será calculado quando houver dado oficial disponível para a composição escolhida.</p>
 <div id="sinapiCategories" class="sinapi-categories"></div>
 <p id="sinapiCategoryInfo" class="small">Toque em uma ou mais categorias para ver os serviços.</p>
 <div id="sinapiServiceBox"></div>
@@ -447,7 +449,7 @@ function toggleSinapiPanel(){
  const p=$('sinapiPanel'); if(!p)return;
  const opening=p.style.display==='none'||!p.style.display;
  p.style.display=opening?'block':'none';
- if(opening){if($('sinapiCity')&&$('city'))$('sinapiCity').value=$('city').value;renderSinapiCategories();}
+ if(opening){renderSinapiCategories();}
 }
 function renderSinapiCategories(){
  const box=$('sinapiCategories'); if(!box)return;
@@ -471,14 +473,14 @@ function renderSinapiServices(){
  const box=$('sinapiServiceBox'),info=$('sinapiCategoryInfo'); if(!box)return;
  const selectedBox=$('sinapiSelectedBox');
  if(!sinapiSelectedCategories.length){box.innerHTML='';if(info)info.textContent='Toque em uma ou mais categorias acima para ver os serviços.';if(selectedBox){selectedBox.style.display='none';selectedBox.innerHTML='';}return;}
- if(info)info.innerHTML='<b>Selecione os serviços e informe a quantidade.</b> O código SINAPI é apenas referência técnica. O preço do orçamento vem da tabela comercial RECOLL ou pode ser informado manualmente.';
+ if(info)info.innerHTML='<b>Selecione os serviços e informe a quantidade.</b> A composição e o preço de mão de obra devem vir da referência SINAPI selecionada.';
  const rows=[];
  sinapiSelectedCategories.forEach(c=>{
    const lista=RECOLL_SERVICOS_CATEGORIA[c]||[];
    rows.push(`<div class="sinapi-service-category"><div class="sinapi-service-title">${c}</div><div class="sinapi-service-grid">`);
    lista.forEach((x,i)=>{
      const key=c+'|'+x[0], checked=sinapiSelectedServices.some(s=>s.key===key);
-     rows.push(`<button type="button" class="sinapi-service-btn ${checked?'selected':''}" onclick='toggleSinapiService(${JSON.stringify(c)},${i},${!checked})'><span class="check">${checked?'✓':'＋'}</span><span><b>${x[0]}</b><small>${x[1]} · preço comercial RECOLL</small></span></button>`);
+     rows.push(`<button type="button" class="sinapi-service-btn ${checked?'selected':''}" onclick='toggleSinapiService(${JSON.stringify(c)},${i},${!checked})'><span class="check">${checked?'✓':'＋'}</span><span><b>${x[0]}</b><small>${x[1]} · referência SINAPI</small></span></button>`);
    });
    rows.push('</div></div>');
  });
@@ -493,7 +495,7 @@ function renderSinapiServices(){
      <div class="row"><div><label>Quantidade</label><input id="sinapiQty_${i}" type="number" min="0" step="0.01" inputmode="decimal" value="${s.qty ?? 0}" oninput="setSinapiQty(${JSON.stringify(s.key)},this.value)"></div><div><label>Unidade</label><select onchange="setSinapiUnit(${JSON.stringify(s.key)},this.value)">
      <option value="m²" ${s.unitSelecionada==='m²'?'selected':''}>m²</option><option value="m" ${s.unitSelecionada==='m'?'selected':''}>m (metro linear)</option><option value="unidade" ${s.unitSelecionada==='unidade'?'selected':''}>Unidade</option><option value="hora" ${s.unitSelecionada==='hora'?'selected':''}>Hora</option><option value="diária" ${s.unitSelecionada==='diária'?'selected':''}>Diária</option><option value="serviço" ${s.unitSelecionada==='serviço'?'selected':''}>Serviço</option></select></div></div>
      <label>Preço unitário SINAPI — mão de obra (R$)</label><input type="number" min="0" step="0.01" inputmode="decimal" value="${price}" placeholder="Aguardando valor SINAPI de mão de obra" onchange="setSinapiPrice(${JSON.stringify(s.key)},this.value)">
-     <div class="small">${s.priceSource||'Preço não localizado na tabela comercial; informe o valor aprovado pela RECOLL.'}</div>
+     <div class="small">${s.priceSource||'Aguardando dado oficial SINAPI da mão de obra.'}</div>
      <div class="small">Subtotal: <b>${s.price!==null&&s.price!==undefined?brl((Number(s.price)||0)*(Number(s.qty)||0)):'A confirmar'}</b></div></div>`;
    }).join(''):'';
  }
