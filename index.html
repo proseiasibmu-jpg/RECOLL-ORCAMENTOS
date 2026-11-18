@@ -445,7 +445,16 @@ const SINAPI_ALTERNATIVAS={
   ]
 };
 function sinapiAlternativaKey(s){return s.refSelecionada||s.key;}
-function getSinapiRef(s){return SINAPI_REFERENCIAS[sinapiAlternativaKey(s)] || (s.refSelecionada && SINAPI_ALTERNATIVAS[s.key] ? SINAPI_ALTERNATIVAS[s.key].find(x=>x.codigo===s.refSelecionada) : null);}
+function getSinapiRef(s){
+ const key=sinapiAlternativaKey(s);
+ const direct=SINAPI_REFERENCIAS[key];
+ if(direct)return direct;
+ // Recupera composições cadastradas mesmo quando um orçamento antigo guardou chave/categoria divergente.
+ if(s && (s.name==='Assentamento de porcelanato' || String(s.key||'').toLowerCase().includes('assentamento de porcelanato'))){
+  return SINAPI_REFERENCIAS['Revestimentos|Assentamento de porcelanato']||null;
+ }
+ return s.refSelecionada && SINAPI_ALTERNATIVAS[s.key] ? SINAPI_ALTERNATIVAS[s.key].find(x=>x.codigo===s.refSelecionada) : null;
+}
 function toggleSinapiPanel(){
  const p=$('sinapiPanel'); if(!p)return;
  const opening=p.style.display==='none'||!p.style.display;
