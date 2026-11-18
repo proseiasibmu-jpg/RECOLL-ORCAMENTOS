@@ -249,6 +249,17 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 </div>
 <div id="legacyServiceArea" style="display:none"><label>Serviço</label><select id="service" onchange="fields()"><option value="floor">Piso / Revestimento</option><option value="clean">Limpeza pós-obra</option><option value="paint">Pintura</option><option value="electric">Elétrica</option><option value="hydraulic">Hidráulica</option><option value="masonry">Alvenaria</option><option value="other">Outro serviço</option></select><div id="dynamic"></div></div>
 
+<div class="card" style="padding:14px;background:#eef4ff;margin:14px 0">
+<button type="button" class="primary" style="width:100%" onclick="toggleSinapiPanel()">📚 Orçamento com SINAPI</button>
+<div id="sinapiPanel" style="display:none;margin-top:12px">
+<p class="small"><b>Referência técnica SINAPI + preço comercial RECOLL.</b> Selecione a cidade, as categorias e os serviços. O valor do orçamento será calculado somente com o preço de mão de obra RECOLL.</p>
+<label>Cidade de referência</label><select id="sinapiCity"><option>São Bernardo do Campo</option><option>Santo André</option><option>São Caetano do Sul</option><option>Diadema</option><option>Mauá</option><option>Ribeirão Pires</option><option>Rio Grande da Serra</option><option>Outra cidade</option></select>
+<div id="sinapiCategories" class="sinapi-categories"></div>
+<p id="sinapiCategoryInfo" class="small">Toque em uma ou mais categorias para ver os serviços.</p>
+<div id="sinapiServiceBox"></div>
+<div id="sinapiSelectedBox" style="display:none"></div>
+</div></div>
+
 <h3>Itens do orçamento</h3>
 <div id="quoteItems"></div>
 <div class="row" style="flex-wrap:wrap;gap:8px"><button class="gray" onclick="addQuoteItem()">➕ Adicionar item</button><button class="primary" onclick="addCustomQuoteService()">＋ Cadastrar novo serviço</button></div>
@@ -432,6 +443,12 @@ const SINAPI_ALTERNATIVAS={
 };
 function sinapiAlternativaKey(s){return s.refSelecionada||s.key;}
 function getSinapiRef(s){return SINAPI_REFERENCIAS[sinapiAlternativaKey(s)] || (s.refSelecionada && SINAPI_ALTERNATIVAS[s.key] ? SINAPI_ALTERNATIVAS[s.key].find(x=>x.codigo===s.refSelecionada) : null);}
+function toggleSinapiPanel(){
+ const p=$('sinapiPanel'); if(!p)return;
+ const opening=p.style.display==='none'||!p.style.display;
+ p.style.display=opening?'block':'none';
+ if(opening){if($('sinapiCity')&&$('city'))$('sinapiCity').value=$('city').value;renderSinapiCategories();}
+}
 function renderSinapiCategories(){
  const box=$('sinapiCategories'); if(!box)return;
  box.innerHTML=SINAPI_CATEGORIAS.map(c=>`<button type="button" class="sinapi-cat ${sinapiSelectedCategories.includes(c)?'selected':''}" onclick='toggleSinapiCategory(${JSON.stringify(c)})'>${sinapiSelectedCategories.includes(c)?'✓ ':''}${c}</button>`).join('');
