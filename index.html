@@ -768,7 +768,7 @@ function recollPrintHtml(q){
  </style></head><body><div class="head"><img class="logo" src="${logo}" alt="RECOLL"><div class="brand"><h1>RECOLL</h1><p>REFORMA, CONSTRUÇÃO E LIMPEZA</p></div><div class="slogan">Espaços renovados para novas histórias!<br>━━━━━━━━━━━━</div></div>
  <div class="titleRow"><h2>ORÇAMENTO</h2><div class="meta">Nº: ${esc(q.number||'')}<br>Data: ${esc(date)}<br>Validade: ${validity}</div></div>
  <div class="bar">Cliente</div><div class="details"><b>Nome:</b><span>${esc(q.client||'')}</span><b>WhatsApp:</b><span>${esc(q.phone||'—')}</span></div>
- <div class="bar">Obra</div><div class="details"><b>Cidade:</b><span>${esc(q.city||'')}</span><b>Endereço:</b><span>${esc(q.address||'')}</span><b>Serviço:</b><span>${esc(q.items&&q.items.length?Array.from(new Set(q.items.map(x=>x.category&&x.category!=='Serviços diversos'?x.category:x.desc).filter(Boolean))).join(' / '):(q.service==='SINAPI'?(q.desc||'Serviços e Reformas'):(q.service||'Serviços')))}</span></div>
+ <div class="bar">Obra</div><div class="details"><b>Cidade:</b><span>${esc(q.city||'')}</span><b>Endereço:</b><span>${esc(q.address||'')}</span><b>Serviço:</b><span>${esc(q.quoteName||(q.items&&q.items.length?Array.from(new Set(q.items.map(x=>x.category&&x.category!=='Serviços diversos'?x.category:x.desc).filter(Boolean))).join(' / '):(q.service==='SINAPI'?(q.desc||'Serviços e Reformas'):(q.service||'Serviços'))))}</span></div>
  <table><thead><tr><th>#</th><th>Descrição</th><th>Qtd.</th><th>Unidade</th><th>Valor Unitário</th><th>Valor Total</th></tr></thead><tbody>${rows}</tbody></table>
  ${photos}
  <div class="totalrow"><span>Total do Orçamento</span><strong>${brl(q.total||0)}</strong></div>
@@ -777,8 +777,18 @@ function recollPrintHtml(q){
  <div class="signature">&nbsp;<br><small>RECOLL<br>Responsável / Contratada</small></div><div class="foot"><span>WhatsApp: ${esc(q.companyPhone||'—')}</span><span>@recoll.limpeza</span><span>Santo André – ABC Paulista</span></div>
  <script>window.onload=()=>setTimeout(()=>window.print(),450);<\/script></body></html>`;
 }
+function recollSyncQuoteFields(){
+ if(!currentQuote)return;
+ if($('obs'))currentQuote.obs=$('obs').value;
+ if($('city'))currentQuote.city=$('city').value;
+ if($('address'))currentQuote.address=$('address').value;
+ if($('client'))currentQuote.client=$('client').value||currentQuote.client;
+ if($('phone'))currentQuote.phone=$('phone').value;
+ if($('quoteName'))currentQuote.quoteName=$('quoteName').value.trim();
+}
 function makePDF(){
  if(!currentQuote){alert('Calcule o orçamento primeiro.');return;}
+ recollSyncQuoteFields();
  currentQuote.photos=recollQuotePhotos.length?recollQuotePhotos.slice():(Array.isArray(currentQuote.photos)?currentQuote.photos:[]);
  const w=window.open('','_blank');
  if(!w){alert('O navegador bloqueou a janela de impressão. Permita pop-ups para o RECOLL.');return;}
@@ -787,6 +797,7 @@ function makePDF(){
 let recollPendingShareFile=null;
 async function shareWhatsApp(){
  if(!currentQuote){alert('Calcule o orçamento primeiro.');return;}
+ recollSyncQuoteFields();
  const q=currentQuote;
  // Inclui as fotos escolhidas nesta sessão mesmo antes de salvar o orçamento.
  q.photos=recollQuotePhotos.length?recollQuotePhotos.slice():(Array.isArray(q.photos)?q.photos:[]);
@@ -985,6 +996,7 @@ async function recollAddQuotePhotos(files){
 
 function saveQuote(){
  if(!currentQuote){alert('Calcule o orçamento primeiro.');return}
+ recollSyncQuoteFields();
  currentQuote.status=currentQuote.approved?'Aprovado':'Rascunho'; currentQuote.photos=recollQuotePhotos.slice();
  let h=JSON.parse(localStorage.getItem('recoll_quotes')||'[]');
  let idx=h.findIndex(x=>x.number===currentQuote.number);
