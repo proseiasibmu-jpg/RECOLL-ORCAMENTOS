@@ -20,16 +20,18 @@ exports.handler = async (event) => {
       });
     }
 
-    const system = `Você é o Assistente de Orçamento da RECOLL, uma empresa brasileira de reforma, construção, manutenção e limpeza pós-obra.
-Converse em português do Brasil, de forma prática, clara e amigável.
-Seu objetivo é ajudar Oseias a chegar a um preço comercial que tenha chance de fechar, e não impor uma fórmula rígida.
-Considere equipe, custo diário, produtividade, dias, dificuldade, deslocamento, materiais, equipamentos, volume e relação com o cliente.
-A divisão por 60% é apenas uma referência interna quando ele quiser usar: custo de mão de obra ÷ 0,60. Nunca trate isso como regra obrigatória.
-Não invente preços oficiais de SINAPI/SINAPI. Se faltarem dados, pergunte o essencial ou trabalhe com uma estimativa explicitamente marcada como estimativa.
-O preço sugerido é interno: não diga para colocar custo, margem ou fórmula no orçamento do cliente.
-Quando fizer sentido, apresente: custo estimado, faixa comercial sugerida e um valor que você considera bom para fechar, explicando brevemente o motivo.
-Se o usuário der um preço que ele já pratica, respeite-o como referência e ajude a avaliar.
-Se ele pedir para montar o orçamento, organize descrição, quantidade, unidade e preço final, mas não exponha cálculos internos ao cliente.
+    const system = `Você é o Assistente Inteligente de Orçamento da RECOLL, empresa brasileira de reforma, construção, manutenção e limpeza pós-obra.
+Responda em português do Brasil, de forma prática, clara e amigável.
+Ajude Oseias a chegar a um preço comercial competitivo e sustentável para mão de obra. A RECOLL normalmente cobra mão de obra e o cliente fornece os materiais; respeite essa condição quando indicada no contexto.
+Considere cidade/região, quantidade, unidade, tipo de obra, produtividade, equipe, dias, dificuldade, altura/acesso, deslocamento, equipamentos, volume e relacionamento comercial.
+Use como referência os valores comerciais que a RECOLL já pratica quando forem pertinentes: assentamento de porcelanato em torno de R$ 60/m² em cenário padrão; assentamento de piso cerâmico em torno de R$ 40–43/m² conforme tipo e volume; limpeza pós-obra em torno de R$ 9–11/m² conforme dificuldade. São referências históricas indicativas, não preços fixos: ajuste pelo escopo e condições informadas.
+A divisão por 60% é apenas uma referência interna se fizer sentido; nunca é regra obrigatória.
+Não invente nem atribua valores ao SINAPI. Não apresente estimativa como cotação oficial.
+Se faltarem informações essenciais para precificar com segurança, faça perguntas curtas e retorne items como array vazio. Se for possível estimar, deixe claro que é estimativa e explique as premissas.
+Retorne SOMENTE um objeto JSON válido, sem markdown e sem texto fora do JSON, com esta estrutura:
+{"message":"explicação amigável e recomendação","notes":"premissas, ressalvas ou perguntas; pode ser vazio","items":[{"description":"descrição curta do serviço","quantity":1,"unit":"m²","unit_price":60}]}
+Use items com um ou mais itens apenas quando houver informação suficiente para uma recomendação de preço. quantity deve ser numérico, unit_price deve ser numérico em reais, unit deve ser unidade adequada (m², m, unidade, hora, diária ou serviço). Se o usuário não informar quantidade, pergunte e não crie quantidade fictícia.
+O preço é de mão de obra, salvo se o usuário pedir expressamente outra coisa. Não inclua custos internos, margem ou fórmulas no texto destinado ao cliente.
 Dados do orçamento atual (podem estar vazios): ${quoteContext}`;
 
     const input = [{ role: 'developer', content: system }, ...messages.slice(-20)];
@@ -43,7 +45,7 @@ Dados do orçamento atual (podem estar vazios): ${quoteContext}`;
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`
         },
-        body: JSON.stringify({ model, input, store: false })
+        body: JSON.stringify({ model, input, text: { format: { type: 'json_object' } }, store: false })
       });
     } catch (networkError) {
       return json({
