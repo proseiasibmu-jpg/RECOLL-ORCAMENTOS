@@ -205,11 +205,22 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
  }
  function target(label){
   closeMenu();
-  var b=[...document.querySelectorAll('button,a')].find(function(el){
-   if(el.id && el.id.indexOf('r39')===0)return false;
-   return (el.textContent||'').replace(/\s+/g,' ').trim().indexOf(label)>=0;
-  });
-  if(b)b.click();
+  try{
+   if(label.indexOf('Central de Clientes')>=0){
+    if(window.recollAbrirClientes)window.recollAbrirClientes();
+    else alert('A Central de Clientes ainda está carregando. Tente novamente.');
+    return;
+   }
+   if(label.indexOf('Tabela de Preços')>=0){if(typeof show==='function')show('prices');return;}
+   if(label.indexOf('Financeiro')>=0){if(typeof show==='function')show('finance');return;}
+   if(label.indexOf('Agenda da RECOLL')>=0){
+    if(window.recollRenderAgenda){
+     window.recollRenderAgenda();
+     document.getElementById('recollAgendaBox')?.scrollIntoView({behavior:'smooth',block:'start'});
+    }else alert('A Agenda ainda está carregando. Tente novamente.');
+    return;
+   }
+  }catch(error){console.error('Erro ao abrir opção do menu RECOLL:',error);alert('Não foi possível abrir esta opção. Tente novamente.');}
  }
  document.getElementById('r39Models').onclick=function(){
   if(window.recollAbrirModelos)window.recollAbrirModelos();
@@ -2838,6 +2849,12 @@ document.addEventListener("DOMContentLoaded",function(){try{var d=JSON.parse(loc
   window.recollAddCliente=addCliente;
   window.recollDeleteCliente=delCliente;
   window.recollClienteWA=wa;
+  window.recollAbrirClientes=function(){
+    var box=document.getElementById('recollClientesBox');
+    if(!box){box=document.createElement('div');box.id='recollClientesBox';document.body.appendChild(box);}
+    render();
+    box.scrollIntoView({behavior:'smooth',block:'start'});
+  };
 
   function addButton(){
     var existing=[...document.querySelectorAll('button,a')].find(function(el){
