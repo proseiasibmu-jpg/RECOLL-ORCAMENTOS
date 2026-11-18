@@ -768,7 +768,7 @@ function recollPrintHtml(q){
  </style></head><body><div class="head"><img class="logo" src="${logo}" alt="RECOLL"><div class="brand"><h1>RECOLL</h1><p>REFORMA, CONSTRUÇÃO E LIMPEZA</p></div><div class="slogan">Espaços renovados para novas histórias!<br>━━━━━━━━━━━━</div></div>
  <div class="titleRow"><h2>ORÇAMENTO</h2><div class="meta">Nº: ${esc(q.number||'')}<br>Data: ${esc(date)}<br>Validade: ${validity}</div></div>
  <div class="bar">Cliente</div><div class="details"><b>Nome:</b><span>${esc(q.client||'')}</span><b>WhatsApp:</b><span>${esc(q.phone||'—')}</span><b>Tipo da obra:</b><span>${esc(q.kind||'')}</span></div>
- <div class="bar">Obra</div><div class="details"><b>Cidade:</b><span>${esc(q.city||'')}</span><b>Endereço:</b><span>${esc(q.address||'')}</span><b>Serviço:</b><span>${esc(q.quoteName||(q.service==='SINAPI'?'Serviços e Reformas':(q.service||'Serviços')))}</span></div>
+ <div class="bar">Obra</div><div class="details"><b>Cidade:</b><span>${esc(q.city||'')}</span><b>Endereço:</b><span>${esc(q.address||'')}</span><b>Serviço:</b><span>${esc(q.quoteName||(q.items&&q.items.length?Array.from(new Set(q.items.map(x=>x.category&&x.category!=='Serviços diversos'?x.category:x.desc).filter(Boolean))).join(' / '):(q.service==='SINAPI'?'Serviços e Reformas':(q.service||'Serviços'))))}</span></div>
  <table><thead><tr><th>#</th><th>Descrição</th><th>Qtd.</th><th>Unidade</th><th>Valor Unitário</th><th>Valor Total</th></tr></thead><tbody>${rows}</tbody></table>
  ${photos}
  <div class="totalrow"><span>Total do Orçamento</span><strong>${brl(q.total||0)}</strong></div>
