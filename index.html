@@ -454,28 +454,31 @@ function renderSinapiServices(){
  const box=$('sinapiServiceBox'),info=$('sinapiCategoryInfo'); if(!box)return;
  const selectedBox=$('sinapiSelectedBox');
  if(!sinapiSelectedCategories.length){box.innerHTML='';if(info)info.textContent='Toque em uma ou mais categorias acima para ver os serviços.';if(selectedBox){selectedBox.style.display='none';selectedBox.innerHTML='';}return;}
- if(info)info.innerHTML='<b>Agora selecione um ou mais serviços.</b> Toque nos botões abaixo e informe a quantidade. Em <b>Serviços Finais</b>, o sistema segue o modelo da tela de Limpeza pós obra: Salvapiso, Limpeza geral de obra e Remoção de entulho. A referência técnica é vinculada automaticamente; o preço comercial RECOLL ficará separado da referência SINAPI.';
+ if(info)info.innerHTML='<b>Selecione os serviços e informe a quantidade.</b> O código SINAPI é apenas referência técnica. O preço do orçamento vem da tabela comercial RECOLL ou pode ser informado manualmente.';
  const rows=[];
  sinapiSelectedCategories.forEach(c=>{
    const lista=RECOLL_SERVICOS_CATEGORIA[c]||[];
-   rows.push(`<div class="sinapi-service-category"><div class="sinapi-service-title">${c}</div>${c==='Serviços Finais'?'<div class="small" style="margin:6px 0 10px">Preencha o requisito de cada serviço (ex.: 500 m²). O cálculo será quantidade × preço da tabela RECOLL vinculada à referência técnica.</div>':''}<div class="sinapi-service-grid">`);
+   rows.push(`<div class="sinapi-service-category"><div class="sinapi-service-title">${c}</div><div class="sinapi-service-grid">`);
    lista.forEach((x,i)=>{
-     const key=c+'|'+x[0], checked=sinapiSelectedServices.some(s=>s.key===key), ref=SINAPI_REFERENCIAS[key];
-     rows.push(`<button type="button" class="sinapi-service-btn ${checked?'selected':''}" onclick='toggleSinapiService(${JSON.stringify(c)},${i},${!checked})'><span class="check">${checked?'✓':'＋'}</span><span><b>${x[0]}</b><small>${x[1]}${ref?' · RECOLL '+brl(ref.preco)+'/'+(ref.unidade||x[1]):' · preço RECOLL aguardando composição'}</small></span></button>`);
+     const key=c+'|'+x[0], checked=sinapiSelectedServices.some(s=>s.key===key);
+     rows.push(`<button type="button" class="sinapi-service-btn ${checked?'selected':''}" onclick='toggleSinapiService(${JSON.stringify(c)},${i},${!checked})'><span class="check">${checked?'✓':'＋'}</span><span><b>${x[0]}</b><small>${x[1]} · preço comercial RECOLL</small></span></button>`);
    });
    rows.push('</div></div>');
  });
  box.innerHTML=rows.join('');
  if(selectedBox){
    selectedBox.style.display=sinapiSelectedServices.length?'block':'none';
-   selectedBox.innerHTML=sinapiSelectedServices.length?'<h3 style="margin-top:0">✅ Serviços selecionados</h3>'+sinapiSelectedServices.map((s,i)=>{const r=getSinapiRef(s), alts=SINAPI_ALTERNATIVAS[s.key]||[];return `<div class="item" style="margin:8px 0;padding:10px"><b>${i+1}. ${s.name}</b><div class="small">${s.category} · referência: ${r?(r.comercial?'tabela comercial RECOLL':'SINAPI '+r.codigo)+' · preço RECOLL '+brl(r.preco)+'/'+(r.unidade||s.unit):'aguardando composição'}</div>${alts.length?`<label>Composição SINAPI</label><select onchange="setSinapiRef(${JSON.stringify(s.key)},this.value)"><option value="">Selecione a composição correta</option>${alts.map(a=>`<option value="${a.codigo}" ${s.refSelecionada===a.codigo?'selected':''}>${a.codigo} — ${a.descricao} — ${brl(a.preco)}/${a.unidade}</option>`).join('')}</select>`:''}<div class="row"><div><label>Quantidade</label><input id="sinapiQty_${i}" type="number" min="0" step="0.01" inputmode="decimal" value="${s.qty ?? 0}" oninput="setSinapiQty(${JSON.stringify(s.key)},this.value)"></div><div><label>Unidade</label><select onchange="setSinapiUnit(${JSON.stringify(s.key)},this.value)">
-<option value="m²" ${s.unitSelecionada==='m²'?'selected':''}>m²</option>
-<option value="m" ${s.unitSelecionada==='m'?'selected':''}>m (metro linear)</option>
-<option value="unidade" ${s.unitSelecionada==='unidade'?'selected':''}>Unidade</option>
-<option value="hora" ${s.unitSelecionada==='hora'?'selected':''}>Hora</option>
-<option value="diária" ${s.unitSelecionada==='diária'?'selected':''}>Diária</option>
-<option value="serviço" ${s.unitSelecionada==='serviço'?'selected':''}>Serviço</option>
-</select></div></div>${r?`<div class="small">Preço unitário RECOLL: <b>${brl(r.preco)}</b> / ${r.unidade||s.unit}<br><span class="small">${r.comercial?'Tabela comercial RECOLL':'Referência técnica SINAPI: '+r.codigo} (${r.ref||'sem mês informado'})</span></div><div class="small" style="margin-top:4px">Subtotal: <b>${brl((Number(r.preco)||0)*(Number(s.qty)||0))}</b></div>`:''}${r&&r.unidade&&r.unidade!==s.unitSelecionada?'<div class="small" style="color:#8a6d00">⚠️ A unidade da composição SINAPI é '+r.unidade+'. Confira antes de calcular.</div>':''}</div>`}).join(''):'';
+   selectedBox.innerHTML=sinapiSelectedServices.length?'<h3 style="margin-top:0">Serviços selecionados</h3>'+sinapiSelectedServices.map((s,i)=>{
+     sinapiLoadRecollPrice(s);
+     const r=getSinapiRef(s), alts=SINAPI_ALTERNATIVAS[s.key]||[];
+     const price=Number.isFinite(Number(s.price))&&s.price!==null?s.price:'';
+     return `<div class="item" style="margin:8px 0;padding:10px"><b>${i+1}. ${s.name}</b><div class="small">${s.category} · referência técnica: ${r?'SINAPI '+r.codigo:'não cadastrada'}</div>${alts.length?`<label>Composição técnica SINAPI</label><select onchange="setSinapiRef(${JSON.stringify(s.key)},this.value)"><option value="">Selecione a composição</option>${alts.map(a=>`<option value="${a.codigo}" ${s.refSelecionada===a.codigo?'selected':''}>${a.codigo} — ${a.descricao}</option>`).join('')}</select>`:''}
+     <div class="row"><div><label>Quantidade</label><input id="sinapiQty_${i}" type="number" min="0" step="0.01" inputmode="decimal" value="${s.qty ?? 0}" oninput="setSinapiQty(${JSON.stringify(s.key)},this.value)"></div><div><label>Unidade</label><select onchange="setSinapiUnit(${JSON.stringify(s.key)},this.value)">
+     <option value="m²" ${s.unitSelecionada==='m²'?'selected':''}>m²</option><option value="m" ${s.unitSelecionada==='m'?'selected':''}>m (metro linear)</option><option value="unidade" ${s.unitSelecionada==='unidade'?'selected':''}>Unidade</option><option value="hora" ${s.unitSelecionada==='hora'?'selected':''}>Hora</option><option value="diária" ${s.unitSelecionada==='diária'?'selected':''}>Diária</option><option value="serviço" ${s.unitSelecionada==='serviço'?'selected':''}>Serviço</option></select></div></div>
+     <label>Preço unitário de mão de obra RECOLL (R$)</label><input type="number" min="0" step="0.01" inputmode="decimal" value="${price}" placeholder="Informe o preço RECOLL" onchange="setSinapiPrice(${JSON.stringify(s.key)},this.value)">
+     <div class="small">${s.priceSource||'Preço não localizado na tabela comercial; informe o valor aprovado pela RECOLL.'}</div>
+     <div class="small">Subtotal: <b>${s.price!==null&&s.price!==undefined?brl((Number(s.price)||0)*(Number(s.qty)||0)):'A confirmar'}</b></div></div>`;
+   }).join(''):'';
  }
 }
 function toggleSinapiService(c,i,on){
@@ -483,7 +486,7 @@ function toggleSinapiService(c,i,on){
  if(on){
    if(!sinapiSelectedServices.some(s=>s.key===key)){
      const unidadeInicial = x[1]==='h'?'hora':(x[1]==='un.'?'unidade':(['m²','m','diária','serviço'].includes(x[1])?x[1]:'unidade'));
-     sinapiSelectedServices.push({key,category:c,name:x[0],unit:x[1],unitSelecionada:unidadeInicial,qty:0});
+     const item={key,category:c,name:x[0],unit:x[1],unitSelecionada:unidadeInicial,qty:0}; sinapiLoadRecollPrice(item); sinapiSelectedServices.push(item);
    }
  } else {
    sinapiSelectedServices=sinapiSelectedServices.filter(s=>s.key!==key);
@@ -494,12 +497,35 @@ function setSinapiQty(key,v){const s=sinapiSelectedServices.find(x=>x.key===key)
 function syncSinapiQuantitiesFromScreen(){sinapiSelectedServices.forEach((s,i)=>{const el=document.getElementById('sinapiQty_'+i);if(el){const n=parseFloat(String(el.value).replace(',','.'));s.qty=Number.isFinite(n)?n:0;}});}
 function setSinapiUnit(key,v){const s=sinapiSelectedServices.find(x=>x.key===key);if(s){s.unitSelecionada=v;renderSinapiServices();}}
 function setSinapiRef(key,codigo){const s=sinapiSelectedServices.find(x=>x.key===key);if(s){s.refSelecionada=codigo||'';renderSinapiServices();}}
-function sinapiTotal(){return sinapiSelectedServices.reduce((sum,s)=>{const r=getSinapiRef(s);return sum+(r?(Number(r.preco)||0)*(Number(s.qty)||0):0)},0)}
-function sinapiMissing(){return sinapiSelectedServices.filter(s=>!getSinapiRef(s));}
+function sinapiCommercialMap(s){
+ const k=s.key;
+ const map={
+  'Pintura|Preparação de paredes':['Pintura interna',0],
+  'Pintura|Pintura de paredes':['Pintura interna',1],
+  'Revestimentos|Assentamento de porcelanato':['Porcelanato',0],
+  'Construção|Alvenaria':['Alvenaria',0],
+  'Contrapiso|Execução de contrapiso':['Contrapiso',0],
+  'Impermeabilização|Impermeabilização de piso':['Impermeabilização',0],
+  'Impermeabilização|Impermeabilização de parede':['Impermeabilização',0],
+  'Reboco / Regularização|Reboco de parede':['Chapisco e reboco',1],
+  'Serviços Finais|Limpeza geral de obra':['Limpeza pós-obra',1]
+ };
+ return map[k]||null;
+}
+function sinapiLoadRecollPrice(s){
+ if(s.price!==undefined)return;
+ const m=sinapiCommercialMap(s);
+ if(!m){s.price=null;s.priceSource='Sem correspondência exata na tabela RECOLL.';return;}
+ const item=(RECOLL_TABELA_REFERENCIA[m[0]]||[])[m[1]];
+ if(item){s.price=Number(item.price);s.priceSource='Tabela RECOLL: '+item.desc+' ('+m[0]+')';}
+ else{s.price=null;s.priceSource='Preço não cadastrado na tabela RECOLL.';}
+}
+function setSinapiPrice(key,v){const s=sinapiSelectedServices.find(x=>x.key===key);if(s){const n=String(v).trim()===''?null:Number(String(v).replace(',','.'));s.price=Number.isFinite(n)&&n>=0?n:null;s.priceSource='Preço informado/ajustado pela RECOLL';renderSinapiServices();}}
+function sinapiTotal(){return sinapiSelectedServices.reduce((sum,s)=>sum+(Number(s.price)||0)*(Number(s.qty)||0),0)}
+function sinapiMissing(){return sinapiSelectedServices.filter(s=>s.price===null||s.price===undefined||!Number.isFinite(Number(s.price)));}
 function renderSinapiSummary(){
- const missing=sinapiMissing();
- const total=sinapiTotal();
- return `<div class="card" style="padding:12px;background:#f8faff"><b>Composição do orçamento RECOLL + referência SINAPI</b><p class="small">${sinapiSelectedServices.length} serviço(s) selecionado(s).</p><p class="small">Cada item é calculado por <b>quantidade × preço unitário</b>.</p><p class="small">A referência SINAPI identifica tecnicamente o serviço. O cálculo do orçamento usa o preço da tabela comercial RECOLL.</p>${missing.length?`<div class="sinapi-empty">${missing.length} serviço(s) ainda sem preço RECOLL cadastrado. Não será usado preço base inventado.</div>`:''}<div class="total">Valor de referência RECOLL: ${brl(total)}</div></div>`;
+ const missing=sinapiMissing(),total=sinapiTotal();
+ return `<div class="card" style="padding:12px;background:#f8faff"><b>Orçamento comercial RECOLL</b><p class="small">${sinapiSelectedServices.length} serviço(s). SINAPI é somente identificação técnica; nenhum preço SINAPI entra no cálculo.</p><p class="small">Total calculado por quantidade × preço unitário RECOLL.</p>${missing.length?`<div class="sinapi-empty">${missing.length} item(ns) sem preço comercial RECOLL. Preencha o preço antes de calcular.</div>`:''}<div class="total">Total RECOLL: ${brl(total)}</div></div>`;
 }
 
 function fields(){let s=$('service').value,d=$('dynamic');
@@ -623,7 +649,7 @@ function calculate(){
      return;
    }
    const total=sinapiTotal();
-   currentQuote={client:$('client').value||'Cliente',phone:$('phone').value,city:$('sinapiCity').value.trim()||$('city').value,kind:$('kind').value,address:$('address').value,service:'SINAPI',desc:sinapiSelectedServices.map(s=>`${s.qty} ${s.unitSelecionada||s.unit} — ${s.name}`).join('; '),total,items:sinapiSelectedServices.map(s=>({...s,sinapi:getSinapiRef(s)})),obs:$('obs').value,date:currentQuote&&editingQuoteNumber?currentQuote.date:new Date().toLocaleDateString('pt-BR'),number:editingQuoteNumber||('REC-'+Date.now().toString().slice(-6)),status:(currentQuote&&currentQuote.approved)?'Aprovado':'Rascunho',approved:(currentQuote&&currentQuote.approved)||false};
+   currentQuote={client:$('client').value||'Cliente',phone:$('phone').value,city:$('sinapiCity').value.trim()||$('city').value,kind:$('kind').value,address:$('address').value,service:'SINAPI',desc:sinapiSelectedServices.map(s=>`${s.qty} ${s.unitSelecionada||s.unit} — ${s.name}`).join('; '),total,items:sinapiSelectedServices.map(s=>({...s,price:s.price===undefined?null:s.price,sinapi:getSinapiRef(s)})),obs:$('obs').value,date:currentQuote&&editingQuoteNumber?currentQuote.date:new Date().toLocaleDateString('pt-BR'),number:editingQuoteNumber||('REC-'+Date.now().toString().slice(-6)),status:(currentQuote&&currentQuote.approved)?'Aprovado':'Rascunho',approved:(currentQuote&&currentQuote.approved)||false};
    $('result').innerHTML=renderSinapiSummary()+`<div class="card"><div class="total">Valor total: ${brl(total)}</div><button class="primary" onclick="saveQuote()">💾 Salvar</button><button class="green" onclick="makePDF()">📄 Gerar PDF</button><button class="green" onclick="shareWhatsApp()">📲 WhatsApp</button><button class="primary" onclick="openContractFromQuote()">📑 Contrato</button></div>`;
    return;
  }
@@ -693,7 +719,7 @@ function recollPrintHtml(q){
    const qty=Number(it.qty)||0;
    const unit=it.unitSelecionada||it.unit||(ref&&ref.unidade)||'serviço';
    // O PDF para o cliente mostra somente o preço comercial RECOLL; a referência técnica fica interna.
-   const rawPrice=(it.price!==undefined&&it.price!==null)?Number(it.price):(ref&&ref.preco!==undefined?Number(ref.preco):null);
+   const rawPrice=it.sinapi?(it.price!==undefined&&it.price!==null?Number(it.price):null):((it.price!==undefined&&it.price!==null)?Number(it.price):(ref&&ref.preco!==undefined?Number(ref.preco):null));
    const price=Number.isFinite(rawPrice)?rawPrice:null;
    const total=price===null?(qty>0 && q.items.length===1 ? Number(q.total)||0 : null):qty*price;
    const desc=it.desc||it.name||it.service||'Serviço';
