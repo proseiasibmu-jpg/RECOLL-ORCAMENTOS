@@ -212,7 +212,7 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
     return;
    }
    if(label.indexOf('Tabela de Preços')>=0){if(typeof show==='function')show('prices');return;}
-   if(label.indexOf('Financeiro')>=0){if(typeof show==='function')show('finance');return;}
+   if(label.indexOf('Financeiro')>=0){if(window.recollAbrirFinanceiroObras)window.recollAbrirFinanceiroObras();else alert('O Controle Financeiro ainda está carregando. Tente novamente.');return;}
    if(label.indexOf('Agenda da RECOLL')>=0){
     if(window.recollRenderAgenda){
      window.recollRenderAgenda();
@@ -3130,5 +3130,95 @@ document.addEventListener('DOMContentLoaded',function(){
 })();
 
 </script>
+<style id="recollFinanceStyles">
+#recollFinanceOverlay{display:none;position:fixed;inset:0;z-index:1000000;background:rgba(8,20,40,.65);padding:12px;overflow:auto;align-items:flex-start;justify-content:center;font-family:Arial,sans-serif}
+#recollFinanceBox{background:#fff;width:min(780px,100%);margin:8px auto 25px;border-radius:18px;padding:17px;box-shadow:0 10px 40px #0004;color:#172033;position:relative}
+#rfCloseTop{position:sticky;top:0;z-index:2}
+#recollFinanceBox h2{margin:2px 0 6px;color:#1457d9}#recollFinanceBox .rfmuted{font-size:13px;color:#667085;margin:0 0 12px}
+#recollFinanceBox label{display:block;font-weight:700;font-size:13px;margin:8px 0 3px}#recollFinanceBox input,#recollFinanceBox select,#recollFinanceBox textarea{width:100%;padding:11px;border:1px solid #ccd5e3;border-radius:9px;font-size:15px;box-sizing:border-box;margin:3px 0 7px}
+#recollFinanceBox .rfrow{display:grid;grid-template-columns:1fr 1fr;gap:9px}#recollFinanceBox .rfbtn{border:0;border-radius:10px;padding:12px 14px;font-weight:700;margin:5px 4px 5px 0;cursor:pointer}#recollFinanceBox .rfblue{background:#1457d9;color:white}#recollFinanceBox .rfgreen{background:#168343;color:white}#recollFinanceBox .rfgray{background:#e8edf5;color:#172033}#recollFinanceBox .rfred{background:#fee;color:#a22}
+#recollFinanceBox .rfstats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:12px 0}#recollFinanceBox .rfstat{background:#f4f7fb;border:1px solid #e0e7f0;border-radius:12px;padding:12px}#recollFinanceBox .rfstat small{display:block;color:#667085;font-size:12px}#recollFinanceBox .rfstat b{display:block;font-size:19px;margin-top:5px;overflow-wrap:anywhere}
+#recollFinanceBox .rfsection{border-top:1px solid #e1e6ee;margin-top:15px;padding-top:12px}#recollFinanceBox .rfentry{border:1px solid #dfe5ee;border-radius:10px;padding:10px;margin:7px 0;background:#fbfcfe;font-size:14px}#recollFinanceBox .rfentry b{display:block;margin-bottom:4px}
+@media(max-width:520px){#recollFinanceBox .rfrow{grid-template-columns:1fr}#recollFinanceBox .rfstat b{font-size:17px}}
+</style>
+<div id="recollFinanceOverlay" role="dialog" aria-modal="true" aria-label="Controle financeiro por obra">
+ <div id="recollFinanceBox">
+  <button type="button" class="rfbtn rfgray" id="rfCloseTop" style="display:block;margin:0 0 14px 0">⬅️ Voltar</button>
+  <h2>💰 Controle Financeiro por Obra</h2>
+  <p class="rfmuted">Cada obra tem sua própria ficha. Os registros financeiros ficam separados dos orçamentos existentes.</p>
+  <label for="rfWorkSelect">Escolha uma obra</label><select id="rfWorkSelect"><option value="">Selecione uma obra ou cadastre abaixo</option></select>
+  <div class="rfrow">
+    <div><label for="rfNewName">Nome da obra / cliente (para nova ficha)</label><input id="rfNewName" placeholder="Ex.: Pintura — Cliente João"></div>
+    <div><label for="rfContract">Valor contratado (R$)</label><input id="rfContract" inputmode="decimal" placeholder="0,00"></div>
+  </div>
+  <div class="rfrow">
+    <div><label for="rfReceived">Total recebido acumulado (R$)</label><input id="rfReceived" readonly inputmode="decimal" placeholder="0,00"></div>
+    <div><label for="rfStatus">Situação da obra</label><select id="rfStatus"><option>Em andamento</option><option>Programada</option><option>Concluída</option><option>Entregue</option><option>Paralisada</option></select></div>
+  </div>
+  <div class="rfsection" id="rfReceiptSection">
+    <h3>💵 Registrar novo recebimento</h3>
+    <label for="rfReceiptValue">Valor recebido nesta parcela (R$)</label>
+    <input id="rfReceiptValue" inputmode="decimal" placeholder="Ex.: 4700">
+    <label for="rfReceiptDate">Data do recebimento</label>
+    <input id="rfReceiptDate" type="date">
+    <label for="rfReceiptDesc">Observação (opcional)</label>
+    <input id="rfReceiptDesc" placeholder="Ex.: Parcela da semana 2">
+    <button type="button" class="rfbtn rfgreen" id="rfAddReceipt">➕ Registrar recebimento</button>
+  </div>
+  <label for="rfNotes">Observações</label><textarea id="rfNotes" rows="2" placeholder="Anotações financeiras desta obra"></textarea>
+  <button type="button" class="rfbtn rfblue" id="rfSaveWork">💾 Salvar ficha da obra</button>
+  <div class="rfstats"><div class="rfstat"><small>Valor contratado</small><b id="rfStatContract">R$ 0,00</b></div><div class="rfstat"><small>Saldo a receber</small><b id="rfStatReceivable">R$ 0,00</b></div><div class="rfstat"><small>Pagamentos profissionais</small><b id="rfStatLabor">R$ 0,00</b></div><div class="rfstat"><small>Despesas registradas</small><b id="rfStatExpenses">R$ 0,00</b></div><div class="rfstat"><small>Recebido do cliente</small><b id="rfStatReceived">R$ 0,00</b></div><div class="rfstat"><small>Saldo de caixa (recebido − saídas)</small><b id="rfStatCash">R$ 0,00</b></div></div>
+  <div class="rfsection"><h3>👷 Pagamento de profissional</h3><div class="rfrow"><div><label for="rfPro">Nome do profissional</label><input id="rfPro" placeholder="Nome completo"></div><div><label for="rfPayType">Forma de pagamento</label><select id="rfPayType"><option>Semanal</option><option>Diária</option><option>Empreitada</option><option>Adiantamento</option><option>Outro</option></select></div></div><div class="rfrow"><div><label for="rfPayDate">Data</label><input id="rfPayDate" type="date"></div><div><label for="rfPayValue">Valor pago (R$)</label><input id="rfPayValue" inputmode="decimal" placeholder="0,00"></div></div><label for="rfPayDesc">Período / serviço / observação</label><input id="rfPayDesc" placeholder="Ex.: semana de 12 a 17 / pintura">
+  <button type="button" class="rfbtn rfgreen" id="rfAddPay">+ Registrar pagamento</button></div>
+  <div class="rfsection"><h3>🧾 Despesa da obra</h3><div class="rfrow"><div><label for="rfExpType">Tipo de despesa</label><select id="rfExpType"><option>Material</option><option>Transporte</option><option>Aluguel de equipamento</option><option>Alimentação</option><option>Outro</option></select></div><div><label for="rfExpDate">Data</label><input id="rfExpDate" type="date"></div></div><div class="rfrow"><div><label for="rfExpDesc">Descrição</label><input id="rfExpDesc" placeholder="Ex.: argamassa, combustível"></div><div><label for="rfExpValue">Valor (R$)</label><input id="rfExpValue" inputmode="decimal" placeholder="0,00"></div></div><button type="button" class="rfbtn rfgreen" id="rfAddExp">+ Registrar despesa</button></div>
+  <div class="rfsection"><h3>📚 Histórico desta obra</h3><div id="rfHistory" class="rfmuted">Selecione ou salve uma obra para ver os lançamentos.</div></div>
+  <button type="button" class="rfbtn rfgray" id="rfClose">Fechar</button>
+ </div>
+</div>
+<script id="recollFinanceByWorkV1">
+(function(){
+ const KEY='recoll_finance_obras_v1';let activeId='';
+ const $=id=>document.getElementById(id);
+ const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const money=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+ function num(v){if(v==null)return 0;let s=String(v).replace(/R\$|\s/g,'');if(s.includes(',')&&s.includes('.'))s=s.replace(/\./g,'').replace(',','.');else if(s.includes(','))s=s.replace(',','.');let n=Number(s);return Number.isFinite(n)?n:0;}
+ function load(){try{let a=JSON.parse(localStorage.getItem(KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+ function save(a){localStorage.setItem(KEY,JSON.stringify(a))}
+ function quoteWorks(){let out=[];[['recoll_quotes','Orçamento'],['recoll_maint','Manutenção']].forEach(([k,t])=>{try{let a=JSON.parse(localStorage.getItem(k)||'[]');if(Array.isArray(a))a.forEach((q,i)=>{let name=q.client||q.cond||q.cliente||q.name||'';if(name)out.push({id:'src-'+k+'-'+(q.number||i),name:name+' — '+(q.serviceName||q.type||q.typeName||t),client:name,contract:num(q.total),status:q.status||'Em andamento',source:k,sourceNumber:q.number||String(i)});});}catch(e){}});return out;}
+ function populate(){let sel=$('rfWorkSelect'),old=activeId;let fs=load(),src=quoteWorks();let opts='<option value="">Selecione uma obra ou cadastre abaixo</option>';let all=[];src.forEach(x=>all.push(x));fs.forEach(x=>{if(!all.some(y=>y.id===x.id))all.push(x)});all.forEach(x=>opts+='<option value="'+esc(x.id)+'">'+esc(x.name)+'</option>');sel.innerHTML=opts;if(all.some(x=>x.id===old))sel.value=old;}
+ function current(){return load().find(x=>x.id===activeId)||null}
+ function totals(w){let payments=(w?.payments||[]).reduce((s,x)=>s+num(x.value),0),expenses=(w?.expenses||[]).reduce((s,x)=>s+num(x.value),0),contract=num(w?.contract),received=num(w?.received)+(w?.receipts||[]).reduce((s,x)=>s+num(x.value),0);return {payments,expenses,contract,received,receivable:Math.max(0,contract-received),cash:received-payments-expenses};}
+ function draw(){let w=current();if(!w){$('rfHistory').innerHTML='Selecione uma obra ou salve uma nova ficha.';['rfContract','rfReceived','rfNotes'].forEach(id=>$(id).value='');$('rfNewName').value='';$('rfStatus').value='Em andamento';['rfStatContract','rfStatReceivable','rfStatLabor','rfStatExpenses','rfStatReceived','rfStatCash'].forEach(id=>$(id).textContent=money(0));return;}
+ $('rfNewName').value=w.name||'';$('rfContract').value=String(w.contract||'');$('rfReceived').value=String(totals(w).received||0);$('rfNotes').value=w.notes||'';$('rfStatus').value=w.status||'Em andamento';let t=totals(w);$('rfStatContract').textContent=money(t.contract);$('rfStatReceivable').textContent=money(t.receivable);$('rfStatLabor').textContent=money(t.payments);$('rfStatExpenses').textContent=money(t.expenses);$('rfStatReceived').textContent=money(t.received);$('rfStatCash').textContent=money(t.cash);
+ let items=[];(w.receipts||[]).forEach(x=>items.push({kind:'Recebimento do cliente',date:x.date,desc:x.desc||'Parcela recebida',value:x.value,id:x.id,group:'receipts'}));(w.payments||[]).forEach((x,i)=>items.push({kind:'Pagamento • '+x.type,date:x.date,desc:(x.professional||'Profissional')+' — '+(x.desc||''),value:x.value,id:x.id,group:'payments'}));(w.expenses||[]).forEach(x=>items.push({kind:'Despesa • '+x.type,date:x.date,desc:x.desc||'',value:x.value,id:x.id,group:'expenses'}));items.sort((a,b)=>String(b.date||'').localeCompare(String(a.date||'')));$('rfHistory').innerHTML=items.length?items.map(x=>'<div class="rfentry"><b>'+esc(x.kind)+' — '+money(x.value)+'</b>'+esc(x.date||'Sem data')+'<br>'+esc(x.desc)+'<br><button type="button" class="rfbtn rfred" onclick="recollFinanceDeleteEntry(\''+esc(x.group)+'\',\''+esc(x.id)+'\')">Excluir lançamento</button></div>').join(''):'Nenhum pagamento ou despesa lançado nesta obra.';
+ }
+ function ensureWork(){let w=current();if(w)return w;let name=$('rfNewName').value.trim();if(!name){alert('Selecione uma obra ou informe o nome para criar uma ficha.');return null;}let a=load();activeId='fin-'+Date.now();w={id:activeId,name,contract:0,received:0,status:'Em andamento',notes:'',payments:[],expenses:[],createdAt:new Date().toISOString()};a.unshift(w);save(a);populate();$('rfWorkSelect').value=activeId;return w;}
+ window.recollAbrirFinanceiroObras=function(){populate();$('recollFinanceOverlay').style.display='flex';if(activeId)$('rfWorkSelect').value=activeId;draw();};
+ function close(){ $('recollFinanceOverlay').style.display='none'; }
+ $('rfClose').addEventListener('click',close);if($('rfCloseTop'))$('rfCloseTop').addEventListener('click',close);$('rfWorkSelect').addEventListener('change',function(){activeId=this.value;let w=current();if(!w&&activeId){let src=quoteWorks().find(x=>x.id===activeId);if(src){w={id:src.id,name:src.name,contract:src.contract||0,received:0,status:src.status||'Em andamento',notes:'',payments:[],expenses:[],source:src.source,sourceNumber:src.sourceNumber,createdAt:new Date().toISOString()};let a=load();a.unshift(w);save(a);}}draw();});
+ $('rfSaveWork').addEventListener('click',function(){let w=current();if(!w)w=ensureWork();if(!w)return;let a=load(),i=a.findIndex(x=>x.id===w.id);w.name=$('rfNewName').value.trim()||w.name;w.contract=num($('rfContract').value);/* total recebido é calculado pelo histórico; não sobrescrever aqui */w.status=$('rfStatus').value;w.notes=$('rfNotes').value.trim();if(i<0)a.unshift(w);else a[i]=w;save(a);activeId=w.id;populate();$('rfWorkSelect').value=activeId;draw();alert('Ficha financeira salva.');});
+
+ $('rfAddReceipt').addEventListener('click',function(){
+   let w=ensureWork();if(!w)return;
+   let value=num($('rfReceiptValue').value);
+   if(value<=0){alert('Informe um valor recebido maior que zero.');return;}
+   let a=load(),i=a.findIndex(x=>x.id===w.id);if(i<0){a.unshift(w);i=0;}
+   a[i].receipts=a[i].receipts||[];
+   a[i].receipts.push({id:'r-'+Date.now(),date:$('rfReceiptDate').value||new Date().toISOString().slice(0,10),value,desc:$('rfReceiptDesc').value.trim()});
+   save(a);$('rfReceiptValue').value='';$('rfReceiptDesc').value='';draw();
+ });
+ $('rfAddPay').addEventListener('click',function(){let w=ensureWork();if(!w)return;let professional=$('rfPro').value.trim(),value=num($('rfPayValue').value);if(!professional){alert('Informe o nome do profissional.');return}if(value<=0){alert('Informe um valor maior que zero.');return}let a=load(),i=a.findIndex(x=>x.id===w.id);if(i<0){a.unshift(w);i=0}a[i].payments=a[i].payments||[];a[i].payments.push({id:'p-'+Date.now(),professional,type:$('rfPayType').value,date:$('rfPayDate').value, value,desc:$('rfPayDesc').value.trim()});save(a);$('rfPro').value='';$('rfPayValue').value='';$('rfPayDesc').value='';draw();});
+ $('rfAddExp').addEventListener('click',function(){let w=ensureWork();if(!w)return;let desc=$('rfExpDesc').value.trim(),value=num($('rfExpValue').value);if(!desc){alert('Informe a descrição da despesa.');return}if(value<=0){alert('Informe um valor maior que zero.');return}let a=load(),i=a.findIndex(x=>x.id===w.id);if(i<0){a.unshift(w);i=0}a[i].expenses=a[i].expenses||[];a[i].expenses.push({id:'e-'+Date.now(),type:$('rfExpType').value,date:$('rfExpDate').value,value,desc});save(a);$('rfExpDesc').value='';$('rfExpValue').value='';draw();});
+ window.recollFinanceDeleteEntry=function(group,id){if(!confirm('Excluir este lançamento financeiro?'))return;let a=load(),w=a.find(x=>x.id===activeId);if(!w)return;w[group]=(w[group]||[]).filter(x=>x.id!==id);save(a);draw();};
+ document.addEventListener('DOMContentLoaded',function(){let panel=$('r39MenuPanel');if(panel){let extra=panel.querySelector('[data-r39-finance]');if(extra)extra.remove();}
+ let today=new Date().toISOString().slice(0,10);['rfPayDate','rfExpDate','rfReceiptDate'].forEach(id=>{if($(id))$(id).value=today;});
+ });
+})();
+</script>
+
+
+<script id="recollPwaRegistration">
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
 </body>
 </html>
