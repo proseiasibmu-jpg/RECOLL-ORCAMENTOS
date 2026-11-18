@@ -252,8 +252,8 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 <div class="card" style="padding:14px;background:#eef4ff;margin:14px 0">
 <button type="button" class="primary" style="width:100%" onclick="toggleSinapiPanel()">📚 Orçamento com SINAPI</button>
 <div id="sinapiPanel" style="display:none;margin-top:12px">
-<p class="small"><b>Referência técnica SINAPI + preço comercial RECOLL.</b> Selecione a cidade, as categorias e os serviços. O valor do orçamento será calculado somente com o preço de mão de obra RECOLL.</p>
-<label>Cidade de referência</label><select id="sinapiCity"><option>São Bernardo do Campo</option><option>Santo André</option><option>São Caetano do Sul</option><option>Diadema</option><option>Mauá</option><option>Ribeirão Pires</option><option>Rio Grande da Serra</option><option>Outra cidade</option></select>
+<p class="small"><b>Orçamento pela SINAPI.</b> Selecione a cidade da obra e os serviços. A referência de preço será a composição SINAPI, considerando somente a parcela de mão de obra.</p>
+<label>Cidade de referência</label><input id="sinapiCity" type="text" placeholder="Digite a cidade da obra" value="">
 <div id="sinapiCategories" class="sinapi-categories"></div>
 <p id="sinapiCategoryInfo" class="small">Toque em uma ou mais categorias para ver os serviços.</p>
 <div id="sinapiServiceBox"></div>
@@ -492,7 +492,7 @@ function renderSinapiServices(){
      return `<div class="item" style="margin:8px 0;padding:10px"><b>${i+1}. ${s.name}</b><div class="small">${s.category} · referência técnica: ${r?'SINAPI '+r.codigo:'não cadastrada'}</div>${alts.length?`<label>Composição técnica SINAPI</label><select onchange="setSinapiRef(${JSON.stringify(s.key)},this.value)"><option value="">Selecione a composição</option>${alts.map(a=>`<option value="${a.codigo}" ${s.refSelecionada===a.codigo?'selected':''}>${a.codigo} — ${a.descricao}</option>`).join('')}</select>`:''}
      <div class="row"><div><label>Quantidade</label><input id="sinapiQty_${i}" type="number" min="0" step="0.01" inputmode="decimal" value="${s.qty ?? 0}" oninput="setSinapiQty(${JSON.stringify(s.key)},this.value)"></div><div><label>Unidade</label><select onchange="setSinapiUnit(${JSON.stringify(s.key)},this.value)">
      <option value="m²" ${s.unitSelecionada==='m²'?'selected':''}>m²</option><option value="m" ${s.unitSelecionada==='m'?'selected':''}>m (metro linear)</option><option value="unidade" ${s.unitSelecionada==='unidade'?'selected':''}>Unidade</option><option value="hora" ${s.unitSelecionada==='hora'?'selected':''}>Hora</option><option value="diária" ${s.unitSelecionada==='diária'?'selected':''}>Diária</option><option value="serviço" ${s.unitSelecionada==='serviço'?'selected':''}>Serviço</option></select></div></div>
-     <label>Preço unitário de mão de obra RECOLL (R$)</label><input type="number" min="0" step="0.01" inputmode="decimal" value="${price}" placeholder="Informe o preço RECOLL" onchange="setSinapiPrice(${JSON.stringify(s.key)},this.value)">
+     <label>Preço unitário SINAPI — mão de obra (R$)</label><input type="number" min="0" step="0.01" inputmode="decimal" value="${price}" placeholder="Aguardando valor SINAPI de mão de obra" onchange="setSinapiPrice(${JSON.stringify(s.key)},this.value)">
      <div class="small">${s.priceSource||'Preço não localizado na tabela comercial; informe o valor aprovado pela RECOLL.'}</div>
      <div class="small">Subtotal: <b>${s.price!==null&&s.price!==undefined?brl((Number(s.price)||0)*(Number(s.qty)||0)):'A confirmar'}</b></div></div>`;
    }).join(''):'';
@@ -514,35 +514,26 @@ function setSinapiQty(key,v){const s=sinapiSelectedServices.find(x=>x.key===key)
 function syncSinapiQuantitiesFromScreen(){sinapiSelectedServices.forEach((s,i)=>{const el=document.getElementById('sinapiQty_'+i);if(el){const n=parseFloat(String(el.value).replace(',','.'));s.qty=Number.isFinite(n)?n:0;}});}
 function setSinapiUnit(key,v){const s=sinapiSelectedServices.find(x=>x.key===key);if(s){s.unitSelecionada=v;renderSinapiServices();}}
 function setSinapiRef(key,codigo){const s=sinapiSelectedServices.find(x=>x.key===key);if(s){s.refSelecionada=codigo||'';renderSinapiServices();}}
-function sinapiCommercialMap(s){
- const k=s.key;
- const map={
-  'Pintura|Preparação de paredes':['Pintura interna',0],
-  'Pintura|Pintura de paredes':['Pintura interna',1],
-  'Revestimentos|Assentamento de porcelanato':['Porcelanato',0],
-  'Construção|Alvenaria':['Alvenaria',0],
-  'Contrapiso|Execução de contrapiso':['Contrapiso',0],
-  'Impermeabilização|Impermeabilização de piso':['Impermeabilização',0],
-  'Impermeabilização|Impermeabilização de parede':['Impermeabilização',0],
-  'Reboco / Regularização|Reboco de parede':['Chapisco e reboco',1],
-  'Serviços Finais|Limpeza geral de obra':['Limpeza pós-obra',1]
- };
- return map[k]||null;
-}
 function sinapiLoadRecollPrice(s){
- if(s.price!==undefined)return;
- const m=sinapiCommercialMap(s);
- if(!m){s.price=null;s.priceSource='Sem correspondência exata na tabela RECOLL.';return;}
- const item=(RECOLL_TABELA_REFERENCIA[m[0]]||[])[m[1]];
- if(item){s.price=Number(item.price);s.priceSource='Tabela RECOLL: '+item.desc+' ('+m[0]+')';}
- else{s.price=null;s.priceSource='Preço não cadastrado na tabela RECOLL.';}
+ // Não utilizar a tabela comercial RECOLL neste módulo.
+ // O preço será preenchido somente quando houver composição SINAPI oficial com parcela de mão de obra identificada.
+ if(s.price===undefined)s.price=null;
+ s.priceSource='Aguardando composição SINAPI oficial — parcela de mão de obra.';
 }
-function setSinapiPrice(key,v){const s=sinapiSelectedServices.find(x=>x.key===key);if(s){const n=String(v).trim()===''?null:Number(String(v).replace(',','.'));s.price=Number.isFinite(n)&&n>=0?n:null;s.priceSource='Preço informado/ajustado pela RECOLL';renderSinapiServices();}}
+function setSinapiPrice(key,v){
+ const s=sinapiSelectedServices.find(x=>x.key===key);
+ if(s){
+  const n=String(v).trim()===''?null:Number(String(v).replace(',','.'));
+  s.price=Number.isFinite(n)&&n>=0?n:null;
+  s.priceSource='Valor SINAPI de mão de obra informado para conferência.';
+  renderSinapiServices();
+ }
+}
 function sinapiTotal(){return sinapiSelectedServices.reduce((sum,s)=>sum+(Number(s.price)||0)*(Number(s.qty)||0),0)}
 function sinapiMissing(){return sinapiSelectedServices.filter(s=>s.price===null||s.price===undefined||!Number.isFinite(Number(s.price)));}
 function renderSinapiSummary(){
  const missing=sinapiMissing(),total=sinapiTotal();
- return `<div class="card" style="padding:12px;background:#f8faff"><b>Orçamento comercial RECOLL</b><p class="small">${sinapiSelectedServices.length} serviço(s). SINAPI é somente identificação técnica; nenhum preço SINAPI entra no cálculo.</p><p class="small">Total calculado por quantidade × preço unitário RECOLL.</p>${missing.length?`<div class="sinapi-empty">${missing.length} item(ns) sem preço comercial RECOLL. Preencha o preço antes de calcular.</div>`:''}<div class="total">Total RECOLL: ${brl(total)}</div></div>`;
+ return `<div class="card" style="padding:12px;background:#f8faff"><b>Orçamento pela SINAPI — mão de obra</b><p class="small">${sinapiSelectedServices.length} serviço(s). SINAPI é somente identificação técnica; somente a parcela de mão de obra SINAPI deverá entrar no cálculo.</p><p class="small">Total calculado por quantidade × preço unitário SINAPI de mão de obra.</p>${missing.length?`<div class="sinapi-empty">${missing.length} item(ns) sem preço comercial RECOLL. Preencha o preço antes de calcular.</div>`:''}<div class="total">Total SINAPI — mão de obra: ${brl(total)}</div></div>`;
 }
 
 function fields(){let s=$('service').value,d=$('dynamic');
