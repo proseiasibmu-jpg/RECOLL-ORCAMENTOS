@@ -3245,6 +3245,22 @@ document.addEventListener('DOMContentLoaded',function(){
    return frames;
   }finally{URL.revokeObjectURL(url);v.remove();}
  }
+ window.recollInspectionAIAddItems=function(){
+  const report=window._recollVistoriaAIReport;
+  if(!report||!Array.isArray(report.items)||!report.items.length){alert('Não há serviços sugeridos para levar ao orçamento.');return;}
+  const client=$('vclient').value.trim(),phone=$('vphone').value.trim(),city=$('vcity').value.trim(),address=$('vaddress').value.trim(),kind=$('vkind').value,obs=$('vobs').value.trim();
+  const descriptions=[report.message||'',report.notes||'',obs].filter(Boolean).join('\n\n');
+  newQuote();
+  $('client').value=client;$('phone').value=phone;$('address').value=address;
+  if($('city')){const option=[...$('city').options].find(o=>o.text===city);if(option)$('city').value=option.value;}
+  if($('kind')){const option=[...$('kind').options].find(o=>o.text===kind||o.value===kind);if(option)$('kind').value=option.value;}
+  if($('obs'))$('obs').value=descriptions;
+  report.items.forEach(item=>{
+   quoteItems.push({id:++quoteItemCounter,category:'Serviços diversos',desc:String(item.description||'Serviço identificado na vistoria'),qty:Math.max(0,Number(item.quantity)||0),unit:String(item.unit||'serviço'),price:Math.max(0,Number(item.unit_price)||0)});
+  });
+  renderQuoteItems();
+  alert('Serviços transferidos para o orçamento. Confira medidas e preços antes de calcular.');
+ };
  window.recollAnalyzeInspectionAI=async function(){
   const btn=document.querySelector('#inspection button[onclick="recollAnalyzeInspectionAI()"]'),box=$('recollInspectionAIResult');
   const photos=[...($('vphotos')?.files||[])],videos=[...($('vvideos')?.files||[])];
@@ -3262,7 +3278,7 @@ document.addEventListener('DOMContentLoaded',function(){
    let result;try{result=JSON.parse(data.content||'{}');}catch(e){throw new Error(data.content||'Resposta da IA em formato inesperado.');}
    window._recollVistoriaAIReport=result;
    const items=Array.isArray(result.items)?result.items:[];
-   box.innerHTML='<b>Relatório preliminar da vistoria</b><p>'+esc(result.message||'Análise concluída.')+'</p>'+(result.notes?'<p>'+esc(result.notes)+'</p>':'')+(items.length?'<b>Serviços sugeridos para revisão</b>'+items.map(x=>'<div style="padding:8px 0;border-top:1px solid #ddd"><b>'+esc(x.description)+'</b><br>'+esc(x.quantity??'A medir')+' '+esc(x.unit||'')+(Number.isFinite(Number(x.unit_price))?' × R$ '+Number(x.unit_price).toFixed(2).replace('.',','):' — preço a definir')+'</div>').join(''):'<p>Nenhum item com quantidade e preço suficientemente definidos. Complete as medidas na vistoria.</p>')+'<p class="small">A análise é uma sugestão, não substitui medição nem avaliação presencial. Revise tudo antes de transformar em orçamento.</p>';
+   box.innerHTML='<b>Relatório preliminar da vistoria</b><p>'+esc(result.message||'Análise concluída.')+'</p>'+(result.notes?'<p>'+esc(result.notes)+'</p>':'')+(items.length?'<b>Serviços sugeridos para revisão</b>'+items.map(x=>'<div style="padding:8px 0;border-top:1px solid #ddd"><b>'+esc(x.description)+'</b><br>'+esc(x.quantity??'A medir')+' '+esc(x.unit||'')+(Number.isFinite(Number(x.unit_price))?' × R$ '+Number(x.unit_price).toFixed(2).replace('.',','):' — preço a definir')+'</div>').join('')+'<button type="button" class="primary" style="margin-top:10px" onclick="recollInspectionAIAddItems()">➡️ Levar serviços para o orçamento</button>':'<p>Nenhum item com quantidade e preço suficientemente definidos. Complete as medidas na vistoria.</p>')+'<p class="small">A análise é uma sugestão, não substitui medição nem avaliação presencial. Revise tudo antes de transformar em orçamento.</p>';
   }catch(e){box.textContent='Não foi possível concluir a análise: '+(e.message||'erro desconhecido');}
   finally{btn.disabled=false;btn.textContent=oldText;}
  };
