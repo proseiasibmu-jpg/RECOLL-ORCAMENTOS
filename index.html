@@ -392,7 +392,7 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 <script>
 let currentQuote=null,items=[],itemCounter=0,quoteItems=[],quoteItemCounter=0,editingQuoteNumber=null,recollQuotePhotos=[];
 const $=id=>document.getElementById(id);
-function show(id){['home','new','maintenance','inspection','pending','finance','works','prices','settings','contract','execution','obras-v9','calculadoraPrecos','assistenteOrcamento','termoEntregaV14'].forEach(x=>{if($(x))$(x).classList.add('hidden')});if($(id))$(id).classList.remove('hidden');if(id==='works'){renderHistory();if($('obras-v9'))$('obras-v9').classList.remove('hidden');}if(id==='prices')renderPrices();if(id==='pending')renderPendingV4();if(id==='finance')renderFinanceV4();}
+function show(id){['home','new','maintenance','inspection','pending','finance','works','prices','settings','contract','execution','obras-v9','calculadoraPrecos','assistenteOrcamento','termoEntregaV14'].forEach(x=>{if($(x))$(x).classList.add('hidden')});if($('new'))$('new').style.display='none';if($(id))$(id).classList.remove('hidden');if(id==='new'&&$('new'))$('new').style.display='';if(id==='works'){renderHistory();if($('obras-v9'))$('obras-v9').classList.remove('hidden');}if(id==='prices')renderPrices();if(id==='pending')renderPendingV4();if(id==='finance')renderFinanceV4();}
 function brl(v){return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});}
 const SINAPI_CATEGORIAS=[
 'Mobilização / Desmob.','Demolição + Descarte','Contrapiso','Construção','Piscina','Telhados e Coberturas','Louças e Metais','Elétrica','Hidráulica','Climatização','Iluminação','Pintura','Impermeabilização','Revestimentos','Esquadrias','Reboco / Regularização','Fachada','Áreas Externas','Serviços Finais','Gerais / Outros'
@@ -3020,7 +3020,7 @@ document.addEventListener('DOMContentLoaded',function(){
   else { const home=$('home'),form=$('new'); if(home)home.classList.add('hidden'); if(form)form.classList.remove('hidden'); }
   const home=$('home'),form=$('new');
   if(home)home.classList.add('hidden');
-  if(form){form.classList.remove('hidden');form.style.display='block';}
+  if(form){form.classList.remove('hidden');form.style.display='';}
   editingQuoteNumber=null;currentQuote=null;recollQuotePhotos=[];
   if(typeof renderQuotePhotos==='function')renderQuotePhotos();
   quoteItems=[];quoteItemCounter=0;sinapiSelectedCategories=[];sinapiSelectedServices=[];
