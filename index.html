@@ -194,7 +194,7 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 <button data-r39="💰 Tabela de Preços">💰 Tabela de Preços</button>
 <button data-r39="📊 Financeiro">📊 Financeiro</button>
 <button data-r39="📅 Agenda da RECOLL">📅 Agenda</button>
-<button type="button" onclick="window.recollMaterialsOpen()">🧱 Lista de Materiais</button>
+<button type="button" id="r39OpenMaterials">🧱 Lista de Materiais</button>
 </div>
 </div>
 
@@ -3298,6 +3298,8 @@ if ('serviceWorker' in navigator) {
  function save(){try{localStorage.setItem(KEY,JSON.stringify(collect()));}catch(e){}}
  function load(){let d={};try{d=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}$('recollMatClient').value=d.client||'';$('recollMatProject').value=d.project||'';const oldItems=Array.isArray(d.items)?d.items.map(x=>[x.name,x.qty,x.unit].filter(Boolean).join(' — ')).filter(Boolean).join('\\n'):'';$('recollMatText').value=d.materials||oldItems;}
  window.recollMaterialsOpen=function(){load();$('recollMaterialsOverlay').style.display='flex';document.querySelectorAll('#r39MenuPanel.open,#r39Shade.open').forEach(x=>x.classList.remove('open'));};
+ const openButton=$('r39OpenMaterials');
+ if(openButton)openButton.addEventListener('click',function(){window.recollMaterialsOpen();});
  $('recollMatClose').addEventListener('click',()=>{$('recollMaterialsOverlay').style.display='none';save();});
  ['recollMatClient','recollMatProject','recollMatText'].forEach(id=>$(id).addEventListener('input',save));
  $('recollMatSave').addEventListener('click',()=>{save();alert('Lista de materiais salva neste aparelho.');});
