@@ -209,7 +209,12 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
    <label for="recollMatText">Lista de materiais</label>
    <textarea id="recollMatText" rows="12" placeholder="Digite os materiais aqui, um em cada linha.&#10;Ex.: 10 baldes de manta líquida cinza SIKA&#10;04 rolos para pintura"></textarea>
    <div class="recollMatButtons"><button type="button" id="recollMatSave">💾 Salvar lista</button><button type="button" id="recollMatSend">📄 Gerar PDF e enviar</button><button type="button" id="recollMatClose">Fechar</button></div>
-   <p class="recollMatHint">A lista fica salva neste aparelho para você continuar editando.</p>
+   <p class="recollMatHint">Salve cada lista separadamente para consultar depois.</p>
+   <section id="recollSavedMaterials" style="margin-top:24px;border-top:1px solid #e2e8f0;padding-top:18px">
+    <h3 style="font-size:22px;color:#17438e;margin:0 0 12px">Listas de Materiais Salvas</h3>
+    <button type="button" id="recollMatNew" style="background:#1858d6;color:#fff;border:0;border-radius:10px;padding:12px 16px;font-weight:700">＋ Nova lista</button>
+    <div id="recollMatSavedItems" style="margin-top:14px"></div>
+   </section>
   </div>
  </section>
 </div>
@@ -3291,16 +3296,39 @@ document.addEventListener('DOMContentLoaded',function(){
 <script id="recollMaterialsJS">
 (function(){
  const $=id=>document.getElementById(id);
- const KEY='recoll_materials_list_v1';
- function collect(){return {client:$('recollMatClient').value.trim(),project:$('recollMatProject').value.trim(),materials:$('recollMatText').value.replace(/\\r/g,'').trim()};}
- function save(){try{localStorage.setItem(KEY,JSON.stringify(collect()));}catch(e){}}
- function load(){let d={};try{d=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}$('recollMatClient').value=d.client||'';$('recollMatProject').value=d.project||'';const oldItems=Array.isArray(d.items)?d.items.map(x=>[x.name,x.qty,x.unit].filter(Boolean).join(' — ')).filter(Boolean).join('\\n'):'';$('recollMatText').value=d.materials||oldItems;}
- window.recollMaterialsOpen=function(){load();$('recollMaterialsOverlay').style.display='flex';document.querySelectorAll('#r39MenuPanel.open,#r39Shade.open').forEach(x=>x.classList.remove('open'));};
+ const KEY='recoll_materials_list_v1',SAVED=KEY+'_saved',DRAFT=KEY+'_draft';
+ let selectedId=null;
+ function collect(){return {client:$('recollMatClient').value.trim(),project:$('recollMatProject').value.trim(),materials:$('recollMatText').value.replace(/\r/g,'').trim()};}
+ function draft(){try{localStorage.setItem(DRAFT,JSON.stringify(collect()));}catch(e){}}
+ function getSaved(){try{const x=JSON.parse(localStorage.getItem(SAVED)||'[]');return Array.isArray(x)?x:[];}catch(e){return [];}}
+ function setSaved(x){try{localStorage.setItem(SAVED,JSON.stringify(x));}catch(e){alert('Não foi possível salvar. O armazenamento do aparelho pode estar cheio.');}}
+ function fill(d){$('recollMatClient').value=d.client||'';$('recollMatProject').value=d.project||'';$('recollMatText').value=d.materials||'';draft();}
+ function renderSaved(){
+  const host=$('recollMatSavedItems'),items=getSaved();
+  if(!items.length){host.innerHTML='<p class="recollMatHint">Nenhuma lista salva ainda.</p>';return;}
+  host.innerHTML=items.slice().reverse().map(x=>'<article style="border:1px solid #dbe2ed;border-radius:13px;padding:14px;margin:10px 0;background:#f8faff"><strong style="font-size:17px;color:#172033">'+esc(x.client||'Sem cliente')+'</strong><div style="color:#657085;margin:5px 0">'+esc(x.project||'Sem tipo de obra')+'</div><div style="color:#657085;font-size:12px;margin-bottom:10px">'+esc(x.date||'')+'</div><div style="display:flex;gap:8px;flex-wrap:wrap"><button type="button" data-open="'+x.id+'" style="background:#1858d6;color:white">✏️ Abrir</button><button type="button" data-delete="'+x.id+'" style="background:#f47b20;color:white">🗑 Excluir</button></div></article>').join('');
+ }
+ function esc(v){return String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+ function newList(){selectedId=null;fill({});$('recollMatClient').focus();}
+ function saveList(){
+  const d=collect();if(!d.client&&!d.project&&!d.materials){alert('Preencha os dados da lista antes de salvar.');return;}
+  const items=getSaved(),now=new Date(),date=now.toLocaleDateString('pt-BR');
+  if(selectedId){const i=items.findIndex(x=>String(x.id)===String(selectedId));if(i>=0){items[i]={...items[i],...d,date};}else{items.push({id:String(Date.now()),...d,date});}}
+  else{selectedId=String(Date.now());items.push({id:selectedId,...d,date});}
+  setSaved(items);draft();renderSaved();alert('Lista salva separadamente com sucesso.');
+ }
+ function loadDraft(){let d={};try{d=JSON.parse(localStorage.getItem(DRAFT)||'{}')||{};}catch(e){}if(!d.client&&!d.project&&!d.materials){try{const legacy=JSON.parse(localStorage.getItem(KEY)||'{}')||{};d=legacy;}catch(e){}}fill(d);}
+ window.recollMaterialsOpen=function(){loadDraft();renderSaved();$('recollMaterialsOverlay').style.display='flex';document.querySelectorAll('#r39MenuPanel.open,#r39Shade.open').forEach(x=>x.classList.remove('open'));};
  document.addEventListener('click',function(e){const b=e.target&&e.target.closest?e.target.closest('#r39OpenMaterials'):null;if(!b)return;e.preventDefault();e.stopPropagation();if(typeof window.recollMaterialsOpen==='function')window.recollMaterialsOpen();},true);
- $('recollMatClose').addEventListener('click',()=>{$('recollMaterialsOverlay').style.display='none';save();});
- ['recollMatClient','recollMatProject','recollMatText'].forEach(id=>$(id).addEventListener('input',save));
- $('recollMatSave').addEventListener('click',()=>{save();alert('Lista de materiais salva neste aparelho.');});
- $('recollMaterialsOverlay').addEventListener('click',e=>{if(e.target===$('recollMaterialsOverlay')){$('recollMaterialsOverlay').style.display='none';save();}});
+ $('recollMatClose').addEventListener('click',()=>{$('recollMaterialsOverlay').style.display='none';draft();});
+ ['recollMatClient','recollMatProject','recollMatText'].forEach(id=>$(id).addEventListener('input',draft));
+ $('recollMatSave').addEventListener('click',saveList);
+ $('recollMatNew').addEventListener('click',newList);
+ $('recollMatSavedItems').addEventListener('click',e=>{
+  const open=e.target.closest('[data-open]');if(open){const id=open.getAttribute('data-open'),item=getSaved().find(x=>String(x.id)===String(id));if(item){selectedId=id;fill(item);$('recollMatClient').scrollIntoView({behavior:'smooth',block:'center'});}return;}
+  const del=e.target.closest('[data-delete]');if(del){const id=del.getAttribute('data-delete');if(confirm('Excluir esta lista de materiais?')){setSaved(getSaved().filter(x=>String(x.id)!==String(id)));if(String(selectedId)===String(id))newList();renderSaved();}}
+ });
+ $('recollMaterialsOverlay').addEventListener('click',e=>{if(e.target===$('recollMaterialsOverlay')){$('recollMaterialsOverlay').style.display='none';draft();}});
  $('recollMatSend').addEventListener('click',async()=>{
   const d=collect(),lines=d.materials.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
   if(!lines.length){alert('Digite os materiais antes de gerar o PDF.');return;} save();
