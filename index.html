@@ -285,7 +285,7 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 </div>
 <label>Observações</label><textarea id="obs" placeholder="Detalhes, inclusões e exclusões..." rows="3"></textarea>
 <button class="primary" onclick="calculate()">Calcular orçamento</button>
-<button class="gray" onclick="show('home')">Voltar</button>
+<button class="gray" onclick="recollOpenOrcamentos()">Voltar</button>
 <div id="result"></div>
 </div>
 <div class="card hidden" id="maintenance">
@@ -639,7 +639,7 @@ function removeQuoteItem(id){quoteItems=quoteItems.filter(x=>x.id!==id);renderQu
 
 let recollAIItems=[];
 function recollAIescape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-async async function recollAskAI(){
+async function recollAskAI(){
  const field=$('recollAIRequest'), answer=$('recollAIAnswer'), button=$('recollAIButton');
  const request=(field?.value||'').trim();
  if(!request){alert('Descreva o serviço que deseja orçar.');return;}
