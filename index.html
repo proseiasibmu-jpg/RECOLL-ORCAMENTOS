@@ -305,6 +305,10 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 <label>Endereço</label><input id="vaddress"/>
 <label>Tipo de imóvel</label><input id="vproperty" placeholder="Casa, apartamento, condomínio..."/>
 <label>Fotos</label><input accept="image/*" id="vphotos" multiple="" type="file"/>
+<label>Vídeos da vistoria (até 2 vídeos curtos)</label><input accept="video/*" id="vvideos" multiple="" type="file"/>
+<p class="small">Os vídeos serão analisados por imagens extraídas de alguns momentos. O arquivo de vídeo não será salvo no orçamento.</p>
+<button class="green" type="button" onclick="recollAnalyzeInspectionAI()">✨ Analisar fotos e vídeos com IA</button>
+<div id="recollInspectionAIResult" class="item" style="display:none;margin-top:10px"></div>
 <label>Observações da vistoria</label><textarea id="vobs" placeholder="Ambientes, problemas e serviços necessários..." rows="4"></textarea>
 <button class="primary" onclick="saveInspectionV4()">💾 Salvar vistoria</button>
 <button class="primary" onclick="inspectionToQuoteV4()">➡️ Transformar em orçamento</button>
@@ -3030,9 +3034,9 @@ document.addEventListener('DOMContentLoaded',function(){
  window.recollQuoteWhatsAppIndex=function(i){const h=JSON.parse(localStorage.getItem('recoll_quotes')||'[]');if(!h[i])return;currentQuote=JSON.parse(JSON.stringify(h[i]));shareWhatsApp();};
  window.recollQuoteContractIndex=function(i){const h=JSON.parse(localStorage.getItem('recoll_quotes')||'[]');if(!h[i])return;currentQuote=JSON.parse(JSON.stringify(h[i]));closeHub();openContractFromQuote();};
  window.recollStartWorkIndex=function(i){const h=JSON.parse(localStorage.getItem('recoll_quotes')||'[]');if(!h[i])return;h[i].inProgress=true;h[i].status='Em andamento';localStorage.setItem('recoll_quotes',JSON.stringify(h));alert('Obra iniciada e enviada para Minhas Obras.');renderOrcamentos();};
- window.recollEditVistoria=function(i){const h=JSON.parse(localStorage.getItem('recoll_inspections')||'[]');const v=h[i];if(!v)return;closeHub();show('inspection');$('vclient').value=v.client||'';$('vphone').value=v.phone||'';$('vcity').value=v.city||'';$('vaddress').value=v.address||'';$('vproperty').value=v.property||'';$('vobs').value=v.obs||'';window._recollEditingInspection=i;};
+ window.recollEditVistoria=function(i){const h=JSON.parse(localStorage.getItem('recoll_inspections')||'[]');const v=h[i];if(!v)return;closeHub();show('inspection');$('vclient').value=v.client||'';$('vphone').value=v.phone||'';$('vcity').value=v.city||'';$('vaddress').value=v.address||'';$('vproperty').value=v.property||'';$('vobs').value=v.obs||'';window._recollVistoriaAIReport=v.aiReport||null;const aiBox=$('recollInspectionAIResult');if(aiBox){aiBox.style.display=v.aiReport?'block':'none';aiBox.innerHTML=v.aiReport?'<b>Relatório de IA salvo</b><p>'+recollAIescape(v.aiReport.message||'Análise anterior disponível.')+'</p>':'';}window._recollEditingInspection=i;};
  function photoData(files){return Promise.all([...files].map(f=>new Promise(res=>{const r=new FileReader();r.onload=()=>res({name:f.name,data:r.result});r.readAsDataURL(f);})));}
- window.saveInspectionV4=async function(){const files=$('vphotos')?.files||[];const old=(JSON.parse(localStorage.getItem('recoll_inspections')||'[]'))[window._recollEditingInspection];const photos=files.length?await photoData(files):(old?.photos||[]);const v={client:$('vclient').value.trim(),phone:$('vphone').value.trim(),city:$('vcity').value.trim(),kind:$('vkind').value, address:$('vaddress').value.trim(),property:$('vproperty').value.trim(),obs:$('vobs').value.trim(),photos,date:old?.date||new Date().toLocaleDateString('pt-BR'),number:old?.number||('VST-'+Date.now().toString().slice(-6))};let h=JSON.parse(localStorage.getItem('recoll_inspections')||'[]');if(Number.isInteger(window._recollEditingInspection)){h[window._recollEditingInspection]=v;}else h.unshift(v);localStorage.setItem('recoll_inspections',JSON.stringify(h));window._recollEditingInspection=null;alert('Vistoria salva no aplicativo.');renderVistorias();};
+ window.saveInspectionV4=async function(){const files=$('vphotos')?.files||[];const old=(JSON.parse(localStorage.getItem('recoll_inspections')||'[]'))[window._recollEditingInspection];const photos=files.length?await photoData(files):(old?.photos||[]);const v={client:$('vclient').value.trim(),phone:$('vphone').value.trim(),city:$('vcity').value.trim(),kind:$('vkind').value, address:$('vaddress').value.trim(),property:$('vproperty').value.trim(),obs:$('vobs').value.trim(),photos,aiReport:window._recollVistoriaAIReport||old?.aiReport||null,date:old?.date||new Date().toLocaleDateString('pt-BR'),number:old?.number||('VST-'+Date.now().toString().slice(-6))};let h=JSON.parse(localStorage.getItem('recoll_inspections')||'[]');if(Number.isInteger(window._recollEditingInspection)){h[window._recollEditingInspection]=v;}else h.unshift(v);localStorage.setItem('recoll_inspections',JSON.stringify(h));window._recollEditingInspection=null;alert('Vistoria salva no aplicativo.');renderVistorias();};
  window.recollVistoriaPDF=function(i){const h=JSON.parse(localStorage.getItem('recoll_inspections')||'[]');const v=h[i];if(!v)return;const photos=(v.photos||[]).map(p=>'<img src="'+p.data+'" style="max-width:45%;max-height:220px;object-fit:contain;margin:6px;border:1px solid #ddd">').join('');const w=window.open('','_blank');w.document.write('<html><head><title>Vistoria '+esc(v.number)+'</title><style>body{font-family:Arial;padding:28px;color:#172033}h1{color:#123c91}h2{border-bottom:2px solid #1457d9;padding-bottom:5px}.box{padding:10px;border:1px solid #ddd;border-radius:10px;margin:8px 0}.photos{display:flex;flex-wrap:wrap}</style></head><body><h1>RECOLL</h1><h2>VISTORIA</h2><div class="box"><b>Cliente:</b> '+esc(v.client)+'<br><b>WhatsApp:</b> '+esc(v.phone)+'<br><b>Cidade:</b> '+esc(v.city)+'<br><b>Endereço:</b> '+esc(v.address)+'<br><b>Tipo de imóvel:</b> '+esc(v.property)+'<br><b>Data:</b> '+esc(v.date)+'</div><div class="box"><b>Observações</b><p>'+esc(v.obs).replace(/\n/g,'<br>')+'</p></div><div class="photos">'+photos+'</div><p style="margin-top:30px">RECOLL — reforma, construção e limpeza</p><scr'+'ipt>window.onload=function(){window.print();}<\/script></body></html>');w.document.close();};
  window.recollVistoriaWhatsApp=function(i){const h=JSON.parse(localStorage.getItem('recoll_inspections')||'[]');const v=h[i];if(!v)return;const msg='RECOLL — VISTORIA%0A%0ACliente: '+encodeURIComponent(v.client||'')+'%0AData: '+encodeURIComponent(v.date||'')+'%0ACidade: '+encodeURIComponent(v.city||'')+'%0AEndereço: '+encodeURIComponent(v.address||'')+'%0A%0AObservações:%0A'+encodeURIComponent(v.obs||'');window.open('https://wa.me/?text='+msg,'_blank');};
  window.recollVistoriaToQuote=function(i){const h=JSON.parse(localStorage.getItem('recoll_inspections')||'[]');const v=h[i];if(!v)return;newQuote();$('client').value=v.client||'';$('phone').value=v.phone||'';$('address').value=v.address||'';if($('city')){let opts=[...$('city').options];let found=opts.find(o=>o.text===v.city);if(found)$('city').value=found.value;}if($('obs'))$('obs').value=v.obs||'';};
@@ -3217,6 +3221,69 @@ document.addEventListener('DOMContentLoaded',function(){
 </script>
 
 
+
+<script id="recollInspectionAI">
+(function(){
+ const $=id=>document.getElementById(id);
+ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ function readFile(file){return new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});}
+ function imageFromData(data){return new Promise((resolve,reject)=>{const im=new Image();im.onload=()=>resolve(im);im.onerror=reject;im.src=data;});}
+ async function compressData(data,max=1100){const im=await imageFromData(data);const scale=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.max(1,Math.round(im.width*scale));c.height=Math.max(1,Math.round(im.height*scale));c.getContext('2d').drawImage(im,0,0,c.width,c.height);return c.toDataURL('image/jpeg',0.72);}
+ async function videoFrames(file){
+  if(file.size>20*1024*1024)throw new Error('Cada vídeo deve ter no máximo 20 MB.');
+  const url=URL.createObjectURL(file),v=document.createElement('video');
+  v.preload='metadata';v.muted=true;v.playsInline=true;v.src=url;
+  try{
+   await new Promise((res,rej)=>{v.onloadedmetadata=res;v.onerror=()=>rej(new Error('Não foi possível abrir um dos vídeos.'));});
+   const duration=Math.min(Number(v.duration)||0,90);if(!duration)throw new Error('Vídeo sem duração válida.');
+   const times=[Math.min(0.5,duration/4),duration/3,2*duration/3,Math.max(0,duration-0.5)];
+   const frames=[];
+   for(const t of [...new Set(times.map(x=>Math.max(0,Math.min(x,duration-0.1))))]){
+    await new Promise((res,rej)=>{v.onseeked=res;v.onerror=()=>rej(new Error('Falha ao ler quadro do vídeo.'));v.currentTime=t;});
+    const c=document.createElement('canvas'),scale=Math.min(1,1000/Math.max(v.videoWidth,v.videoHeight));c.width=Math.max(1,Math.round(v.videoWidth*scale));c.height=Math.max(1,Math.round(v.videoHeight*scale));c.getContext('2d').drawImage(v,0,0,c.width,c.height);frames.push(c.toDataURL('image/jpeg',0.68));
+   }
+   return frames;
+  }finally{URL.revokeObjectURL(url);v.remove();}
+ }
+ window.recollInspectionAIAddItems=function(){
+  const report=window._recollVistoriaAIReport;
+  if(!report||!Array.isArray(report.items)||!report.items.length){alert('Não há serviços sugeridos para levar ao orçamento.');return;}
+  const client=$('vclient').value.trim(),phone=$('vphone').value.trim(),city=$('vcity').value.trim(),address=$('vaddress').value.trim(),kind=$('vkind').value,obs=$('vobs').value.trim();
+  const descriptions=[report.message||'',report.notes||'',obs].filter(Boolean).join('\n\n');
+  newQuote();
+  $('client').value=client;$('phone').value=phone;$('address').value=address;
+  if($('city')){const option=[...$('city').options].find(o=>o.text===city);if(option)$('city').value=option.value;}
+  if($('kind')){const option=[...$('kind').options].find(o=>o.text===kind||o.value===kind);if(option)$('kind').value=option.value;}
+  if($('obs'))$('obs').value=descriptions;
+  report.items.forEach(item=>{
+   quoteItems.push({id:++quoteItemCounter,category:'Serviços diversos',desc:String(item.description||'Serviço identificado na vistoria'),qty:Math.max(0,Number(item.quantity)||0),unit:String(item.unit||'serviço'),price:Math.max(0,Number(item.unit_price)||0)});
+  });
+  renderQuoteItems();
+  alert('Serviços transferidos para o orçamento. Confira medidas e preços antes de calcular.');
+ };
+ window.recollAnalyzeInspectionAI=async function(){
+  const btn=document.querySelector('#inspection button[onclick="recollAnalyzeInspectionAI()"]'),box=$('recollInspectionAIResult');
+  const photos=[...($('vphotos')?.files||[])],videos=[...($('vvideos')?.files||[])];
+  if(!photos.length&&!videos.length){alert('Selecione pelo menos uma foto ou um vídeo para analisar.');return;}
+  if(photos.length>8||videos.length>2){alert('Use no máximo 8 fotos e 2 vídeos por análise.');return;}
+  const oldText=btn.textContent;btn.disabled=true;btn.textContent='Analisando vistoria...';box.style.display='block';box.textContent='A IA está examinando as imagens. Isso pode levar alguns instantes.';
+  try{
+   const attachments=[];
+   for(const f of photos){if(f.size>12*1024*1024)throw new Error('Cada foto deve ter no máximo 12 MB.');attachments.push(await compressData(await readFile(f)));}
+   for(const f of videos){const frames=await videoFrames(f);attachments.push(...frames);}
+   const context={client:$('vclient').value,city:$('vcity').value,address:$('vaddress').value,property:$('vproperty').value,observations:$('vobs').value,scope:'Somente mão de obra; materiais fornecidos pelo cliente, salvo indicação contrária.'};
+   const request='Faça uma vistoria visual preliminar das imagens anexadas. Identifique somente problemas visíveis, indique serviços recomendados e quantidades apenas quando puderem ser estimadas com segurança. Não invente medidas: marque como "medir no local" quando não houver escala ou dimensão. Informe limitações e pontos que exigem vistoria presencial. Estime valores de mão de obra em reais apenas se houver dados suficientes; caso contrário, deixe preço e quantidade em aberto e diga o que falta. Organize o resultado em português claro para revisão do responsável da RECOLL. Contexto: '+JSON.stringify(context);
+   const response=await fetch('/.netlify/functions/recoll-assistente',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'inspection',messages:[{role:'user',content:request}],quoteContext:JSON.stringify(context),attachments})});
+   const data=await response.json();if(!response.ok)throw new Error(data.content||'Falha ao consultar a IA.');
+   let result;try{result=JSON.parse(data.content||'{}');}catch(e){throw new Error(data.content||'Resposta da IA em formato inesperado.');}
+   window._recollVistoriaAIReport=result;
+   const items=Array.isArray(result.items)?result.items:[];
+   box.innerHTML='<b>Relatório preliminar da vistoria</b><p>'+esc(result.message||'Análise concluída.')+'</p>'+(result.notes?'<p>'+esc(result.notes)+'</p>':'')+(items.length?'<b>Serviços sugeridos para revisão</b>'+items.map(x=>'<div style="padding:8px 0;border-top:1px solid #ddd"><b>'+esc(x.description)+'</b><br>'+esc(x.quantity??'A medir')+' '+esc(x.unit||'')+(Number.isFinite(Number(x.unit_price))?' × R$ '+Number(x.unit_price).toFixed(2).replace('.',','):' — preço a definir')+'</div>').join('')+'<button type="button" class="primary" style="margin-top:10px" onclick="recollInspectionAIAddItems()">➡️ Levar serviços para o orçamento</button>':'<p>Nenhum item com quantidade e preço suficientemente definidos. Complete as medidas na vistoria.</p>')+'<p class="small">A análise é uma sugestão, não substitui medição nem avaliação presencial. Revise tudo antes de transformar em orçamento.</p>';
+  }catch(e){box.textContent='Não foi possível concluir a análise: '+(e.message||'erro desconhecido');}
+  finally{btn.disabled=false;btn.textContent=oldText;}
+ };
+})();
+</script>
 <script id="recollPwaRegistration">
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
