@@ -3007,8 +3007,9 @@ document.addEventListener('DOMContentLoaded',function(){
  const $=id=>document.getElementById(id);
  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));}
  function closeHub(){ $('recollHubOverlay').style.display='none'; }
- function openHub(title,body){ $('recollHubPanel').innerHTML='<div class="rhHead"><button class="rhBack" type="button" onclick="recollHubClose()">‹</button><div class="rhTitle">'+title+'</div></div><div class="rhBody">'+body+'</div>'; $('recollHubOverlay').style.display='block'; window.scrollTo(0,0); }
- window.recollHubClose=closeHub;
+ function hubBack(){ closeHub(); const form=$('new'); if(form && !form.classList.contains('hidden')){ if(typeof window.show==='function') window.show('home'); else { form.classList.add('hidden'); if($('home'))$('home').classList.remove('hidden'); } } }
+ function openHub(title,body){ $('recollHubPanel').innerHTML='<div class="rhHead"><button class="rhBack" type="button" onclick="recollHubBack()">‹</button><div class="rhTitle">'+title+'</div></div><div class="rhBody">'+body+'</div>'; $('recollHubOverlay').style.display='block'; window.scrollTo(0,0); }
+ window.recollHubClose=closeHub; window.recollHubBack=hubBack;
  window.recollOpenVistorias=function(){renderVistorias();};
  window.recollOpenOrcamentos=function(){renderOrcamentos();};
  function resetInspection(){['vclient','vphone','vcity','vaddress','vproperty','vobs'].forEach(id=>{if($(id))$(id).value='';});if($('vphotos'))$('vphotos').value='';}
