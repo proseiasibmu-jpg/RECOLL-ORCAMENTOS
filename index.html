@@ -3318,7 +3318,7 @@ document.addEventListener('DOMContentLoaded',function(){
   setSaved(items);draft();renderSaved();alert('Lista salva separadamente com sucesso.');
  }
  function loadDraft(){let d={};try{d=JSON.parse(localStorage.getItem(DRAFT)||'{}')||{};}catch(e){}if(!d.client&&!d.project&&!d.materials){try{const legacy=JSON.parse(localStorage.getItem(KEY)||'{}')||{};d=legacy;}catch(e){}}fill(d);}
- window.recollMaterialsOpen=function(){loadDraft();renderSaved();$('recollMaterialsOverlay').style.display='flex';document.querySelectorAll('#r39MenuPanel.open,#r39Shade.open').forEach(x=>x.classList.remove('open'));};
+ window.recollMaterialsOpen=function(){newList();renderSaved();$('recollMaterialsOverlay').style.display='flex';document.querySelectorAll('#r39MenuPanel.open,#r39Shade.open').forEach(x=>x.classList.remove('open'));};
  document.addEventListener('click',function(e){const b=e.target&&e.target.closest?e.target.closest('#r39OpenMaterials'):null;if(!b)return;e.preventDefault();e.stopPropagation();if(typeof window.recollMaterialsOpen==='function')window.recollMaterialsOpen();},true);
  $('recollMatClose').addEventListener('click',()=>{$('recollMaterialsOverlay').style.display='none';draft();});
  ['recollMatClient','recollMatProject','recollMatText'].forEach(id=>$(id).addEventListener('input',draft));
