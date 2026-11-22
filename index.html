@@ -51,7 +51,27 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 .blue{background:#1457d9}.green{background:#20a842}.orange{background:#f47b20}.yellow{background:#f4c51c;color:#172033}.lightblue{background:#3197e5}.purple{background:#6042b5}.red{background:#db332c}.grayBtn{background:#65707b}
 .slogan{text-align:center;color:#1457d9;font-size:18px;font-style:italic;padding:16px 5px 4px;font-family:cursive}
 @media(max-width:430px){.welcomeText h2{font-size:23px}.bigBtn{min-height:76px}.bigBtn strong{font-size:16px}.bigBtn small{font-size:11px}}
-</style></head>
+</style>
+<style id="recollMaterialsCSS">
+#recollMaterialsOverlay{display:none;position:fixed;inset:0;z-index:100000;background:rgba(15,28,55,.68);padding:16px;overflow:auto;box-sizing:border-box;align-items:flex-start;justify-content:center}
+#recollMaterialsCard{width:min(720px,100%);margin:auto;background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 16px 48px #0004;color:#172033;font-family:inherit}
+#recollMaterialsHeader{display:flex;align-items:center;gap:14px;padding:16px;background:#f4f7fc;border-bottom:1px solid #e2e8f0}
+.recollMaterialsLogo{width:72px;height:72px;display:flex;align-items:center;justify-content:center;border-radius:12px;background:#fff;color:#1457d9;font-size:20px;font-weight:900}
+#recollMaterialsHeader h2{margin:0;color:#17438e;font-size:23px}
+#recollMaterialsHeader p{margin:4px 0 0;color:#23834b;font-size:12px;font-weight:700}
+#recollMaterialsContent{padding:18px}
+#recollMaterialsContent label{display:block;font-weight:700;margin:12px 0 6px}
+#recollMaterialsContent input,#recollMaterialsContent textarea{width:100%;box-sizing:border-box;border:1px solid #cbd5e1;border-radius:10px;padding:12px;font:inherit;color:#172033;background:#fff}
+#recollMaterialsContent textarea{min-height:260px;resize:vertical;line-height:1.55;white-space:pre-wrap}
+.recollMatButtons{display:flex;flex-wrap:wrap;gap:9px;margin-top:18px}
+.recollMatButtons button{border:0;border-radius:10px;padding:12px;font:inherit;font-weight:700;margin:0}
+#recollMatSave{background:#1858d6;color:white}
+#recollMatSend{background:#168c49;color:white}
+#recollMatClose{background:#e8eef8;color:#172033}
+.recollMatHint{font-size:12px;color:#667085}
+</style>
+
+</head>
 <body>
 <header>
 <div class="logoBox" id="headLogo"><span class="logoText">R</span></div>
@@ -176,6 +196,21 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
 <button data-r39="📅 Agenda da RECOLL">📅 Agenda</button>
 </div>
 </div>
+
+<div id="recollMaterialsOverlay" role="dialog" aria-modal="true" aria-label="Lista de Materiais RECOLL">
+ <section id="recollMaterialsCard">
+  <header id="recollMaterialsHeader"><div class="recollMaterialsLogo">RECOLL</div><div><h2>Lista de Materiais</h2><p>REFORMA • CONSTRUÇÃO • LIMPEZA</p></div></header>
+  <div id="recollMaterialsContent">
+   <label for="recollMatClient">Cliente</label><input id="recollMatClient" placeholder="Nome do cliente">
+   <label for="recollMatProject">Tipo de obra</label><input id="recollMatProject" placeholder="Ex.: Pintura externa, reforma, construção">
+   <label for="recollMatText">Lista de materiais</label>
+   <textarea id="recollMatText" rows="12" placeholder="Digite os materiais aqui, um em cada linha.&#10;Ex.: 10 baldes de manta líquida cinza SIKA&#10;04 rolos para pintura"></textarea>
+   <div class="recollMatButtons"><button type="button" id="recollMatSave">💾 Salvar lista</button><button type="button" id="recollMatSend">📄 Gerar PDF e enviar</button><button type="button" id="recollMatClose">Fechar</button></div>
+   <p class="recollMatHint">A lista fica salva neste aparelho para você continuar editando.</p>
+  </div>
+ </section>
+</div>
+
 <button id="r39Models" type="button">
 <span class="ico">📝</span><span class="txt">Modelos de Orçamento</span><span class="arr">›</span>
 </button>
@@ -3253,5 +3288,39 @@ document.addEventListener('DOMContentLoaded',function(){
 <script id="recollPwaRegistration">
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function () {
+
+<script id="recollMaterialsJS">
+(function(){
+ const $=id=>document.getElementById(id);
+ const KEY='recoll_materials_list_v1';
+ function collect(){return {client:$('recollMatClient').value.trim(),project:$('recollMatProject').value.trim(),materials:$('recollMatText').value.replace(/\\r/g,'').trim()};}
+ function save(){try{localStorage.setItem(KEY,JSON.stringify(collect()));}catch(e){}}
+ function load(){let d={};try{d=JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catch(e){}$('recollMatClient').value=d.client||'';$('recollMatProject').value=d.project||'';const oldItems=Array.isArray(d.items)?d.items.map(x=>[x.name,x.qty,x.unit].filter(Boolean).join(' — ')).filter(Boolean).join('\\n'):'';$('recollMatText').value=d.materials||oldItems;}
+ window.recollMaterialsOpen=function(){load();$('recollMaterialsOverlay').style.display='flex';document.querySelectorAll('#r39MenuPanel.open,#r39Shade.open').forEach(x=>x.classList.remove('open'));};
+ $('recollMatClose').addEventListener('click',()=>{$('recollMaterialsOverlay').style.display='none';save();});
+ ['recollMatClient','recollMatProject','recollMatText'].forEach(id=>$(id).addEventListener('input',save));
+ $('recollMatSave').addEventListener('click',()=>{save();alert('Lista de materiais salva neste aparelho.');});
+ $('recollMaterialsOverlay').addEventListener('click',e=>{if(e.target===$('recollMaterialsOverlay')){$('recollMaterialsOverlay').style.display='none';save();}});
+ $('recollMatSend').addEventListener('click',async()=>{
+  const d=collect(),lines=d.materials.split('\\n').map(x=>x.trim()).filter(Boolean);
+  if(!lines.length){alert('Digite os materiais antes de gerar o PDF.');return;} save();
+  try{
+   const loadPDF=()=>new Promise((resolve,reject)=>{if(window.jspdf&&window.jspdf.jsPDF)return resolve(window.jspdf.jsPDF);const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';sc.onload=()=>window.jspdf&&window.jspdf.jsPDF?resolve(window.jspdf.jsPDF):reject(new Error('Biblioteca PDF indisponível.'));sc.onerror=()=>reject(new Error('Não foi possível carregar o gerador de PDF.'));document.head.appendChild(sc);});
+   const JsPDF=await loadPDF(),pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+   const blue=[20,87,217],dark=[23,32,51],grid=[190,201,218],pale=[244,247,252];let page=1,y=48;
+   const header=()=>{pdf.setFillColor(20,87,217);pdf.roundedRect(10,9,190,25,3,3,'F');pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(20);pdf.text('RECOLL',16,20);pdf.setFontSize(9);pdf.text('REFORMA • CONSTRUÇÃO • LIMPEZA',16,27);pdf.setTextColor(...dark);pdf.setFontSize(15);pdf.text('LISTA DE MATERIAIS',10,43);};
+   const field=(label,value,yy)=>{pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.setTextColor(...blue);pdf.text(label,10,yy);pdf.setFont('helvetica','normal');pdf.setTextColor(...dark);pdf.text(value||'—',42,yy);};
+   const tableHead=()=>{pdf.setFillColor(...blue);pdf.rect(10,y,190,10,'F');pdf.setTextColor(255,255,255);pdf.setFont('helvetica','bold');pdf.setFontSize(10);pdf.text('Nº',17,y+6.7);pdf.text('Descrição dos materiais',28,y+6.7);y+=10;};
+   header();field('Cliente:',d.client,52);field('Tipo de obra:',d.project,60);y=69;tableHead();
+   lines.forEach((line,i)=>{pdf.setFont('helvetica','normal');pdf.setFontSize(10);const wrapped=pdf.splitTextToSize(line,174),rh=Math.max(9,wrapped.length*5+3);if(y+rh>278){pdf.setFontSize(8);pdf.setTextColor(100);pdf.text('RECOLL • Lista de Materiais',10,290);pdf.addPage();page++;header();y=52;tableHead();}if(i%2===1){pdf.setFillColor(...pale);pdf.rect(10,y,190,rh,'F');}pdf.setDrawColor(...grid);pdf.rect(10,y,190,rh,'S');pdf.line(25,y,25,y+rh);pdf.setTextColor(...dark);pdf.text(String(i+1),17,y+Math.min(6.5,rh/2+2),{align:'center'});pdf.text(wrapped,28,y+5.8);y+=rh;});
+   pdf.setFontSize(8);pdf.setTextColor(100);pdf.text('RECOLL • Reforma, Construção e Limpeza',10,290);
+   const safe=(d.client||'Cliente').normalize('NFD').replace(/[\\u0300-\\u036f]/g,'').replace(/[^a-zA-Z0-9_-]+/g,'_').slice(0,35)||'Cliente',filename='Lista_Materiais_RECOLL_'+safe+'.pdf',blob=pdf.output('blob'),file=new File([blob],filename,{type:'application/pdf'});
+   if(navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'Lista de Materiais RECOLL',text:'Lista de materiais da RECOLL. Escolha o WhatsApp para enviar.'});}
+   else{pdf.save(filename);alert('PDF gerado. Abra o WhatsApp e anexe o arquivo baixado.');}
+  }catch(err){alert('Não foi possível gerar/compartilhar o PDF: '+(err&&err.message?err.message:'erro inesperado'));}
+ });
+})();
+</script>
+
 </body>
 </html>
