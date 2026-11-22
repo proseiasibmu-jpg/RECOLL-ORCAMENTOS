@@ -206,21 +206,34 @@ th,td{padding:9px;border-bottom:1px solid #ddd;text-align:left}th:last-child,td:
  function target(label){
   closeMenu();
   try{
-   if(label.indexOf('Central de Clientes')>=0){
-    if(window.recollAbrirClientes)window.recollAbrirClientes();
+   label=String(label||'');
+   if(label.indexOf('Central de Clientes')>=0 || label.indexOf('Clientes')>=0){
+    if(typeof window.recollAbrirClientes==='function') window.recollAbrirClientes();
     else alert('A Central de Clientes ainda está carregando. Tente novamente.');
     return;
    }
-   if(label.indexOf('Tabela de Preços')>=0){if(typeof show==='function')show('prices');return;}
-   if(label.indexOf('Financeiro')>=0){if(window.recollAbrirFinanceiroObras)window.recollAbrirFinanceiroObras();else alert('O Controle Financeiro ainda está carregando. Tente novamente.');return;}
-   if(label.indexOf('Agenda da RECOLL')>=0){
-    if(window.recollRenderAgenda){
+   if(label.indexOf('Tabela de Preços')>=0 || label.indexOf('Preços')>=0){
+    if(typeof window.show==='function') window.show('prices');
+    else alert('A Tabela de Preços ainda está carregando. Tente novamente.');
+    return;
+   }
+   if(label.indexOf('Financeiro')>=0){
+    if(typeof window.recollAbrirFinanceiroObras==='function') window.recollAbrirFinanceiroObras();
+    else alert('O Controle Financeiro ainda está carregando. Tente novamente.');
+    return;
+   }
+   if(label.indexOf('Agenda')>=0){
+    if(typeof window.recollRenderAgenda==='function'){
      window.recollRenderAgenda();
      document.getElementById('recollAgendaBox')?.scrollIntoView({behavior:'smooth',block:'start'});
     }else alert('A Agenda ainda está carregando. Tente novamente.');
     return;
    }
-  }catch(error){console.error('Erro ao abrir opção do menu RECOLL:',error);alert('Não foi possível abrir esta opção. Tente novamente.');}
+   console.warn('Opção do menu RECOLL sem destino:',label);
+  }catch(error){
+   console.error('Erro ao abrir opção do menu RECOLL:',error);
+   alert('Não foi possível abrir esta opção. Tente novamente.');
+  }
  }
  document.getElementById('r39Models').onclick=function(){
   if(window.recollAbrirModelos)window.recollAbrirModelos();
@@ -3000,7 +3013,26 @@ document.addEventListener('DOMContentLoaded',function(){
  window.recollOpenOrcamentos=function(){renderOrcamentos();};
  function resetInspection(){['vclient','vphone','vcity','vaddress','vproperty','vobs'].forEach(id=>{if($(id))$(id).value='';});if($('vphotos'))$('vphotos').value='';}
  function newInspection(){closeHub();show('inspection');resetInspection();window.scrollTo({top:0,behavior:'smooth'});}
- function newQuote(){closeHub();show('new');editingQuoteNumber=null;currentQuote=null;recollQuotePhotos=[];renderQuotePhotos();quoteItems=[];quoteItemCounter=0;sinapiSelectedCategories=[];sinapiSelectedServices=[];['client','phone','address','obs','sinapiCity'].forEach(id=>{if($(id))$(id).value='';});if($('city'))$('city').value='';if($('kind'))$('kind').value='';if($('quoteName'))$('quoteName').value='';if($('service'))$('service').value='floor';if(typeof fields==='function')fields();if($('quoteItems'))$('quoteItems').innerHTML='';if($('result'))$('result').innerHTML='';window.scrollTo({top:0,behavior:'smooth'});}
+ function newQuote(){
+  closeHub();
+  if(typeof window.show==='function') window.show('new');
+  else { const home=$('home'),form=$('new'); if(home)home.classList.add('hidden'); if(form)form.classList.remove('hidden'); }
+  const home=$('home'),form=$('new');
+  if(home)home.classList.add('hidden');
+  if(form){form.classList.remove('hidden');form.style.display='block';}
+  editingQuoteNumber=null;currentQuote=null;recollQuotePhotos=[];
+  if(typeof renderQuotePhotos==='function')renderQuotePhotos();
+  quoteItems=[];quoteItemCounter=0;sinapiSelectedCategories=[];sinapiSelectedServices=[];
+  ['client','phone','address','obs','sinapiCity'].forEach(id=>{if($(id))$(id).value='';});
+  if($('city'))$('city').value='';
+  if($('kind'))$('kind').value='';
+  if($('quoteName'))$('quoteName').value='';
+  if($('service'))$('service').value='floor';
+  if(typeof fields==='function')fields();
+  if($('quoteItems'))$('quoteItems').innerHTML='';
+  if($('result'))$('result').innerHTML='';
+  window.scrollTo({top:0,behavior:'smooth'});
+ }
  window.recollNewInspection=newInspection;window.recollNewQuote=newQuote;
  function renderVistorias(){
   const h=JSON.parse(localStorage.getItem('recoll_inspections')||'[]');
