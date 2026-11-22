@@ -626,7 +626,7 @@ function removeQuoteItem(id){quoteItems=quoteItems.filter(x=>x.id!==id);renderQu
 
 let recollAIItems=[];
 function recollAIescape(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-async function recollAskAI(){
+async async function recollAskAI(){
  const field=$('recollAIRequest'), answer=$('recollAIAnswer'), button=$('recollAIButton');
  const request=(field?.value||'').trim();
  if(!request){alert('Descreva o serviço que deseja orçar.');return;}
