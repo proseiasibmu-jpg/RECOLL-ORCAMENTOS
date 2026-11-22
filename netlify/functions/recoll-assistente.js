@@ -1,12 +1,12 @@
 exports.handler = async (event) => {
-  const json = (obj) => ({
-    statusCode: 200,
+  const json = (obj, statusCode = 200) => ({
+    statusCode,
     headers: { 'Content-Type': 'application/json; charset=utf-8' },
     body: JSON.stringify(obj)
   });
 
   if (event.httpMethod !== 'POST') {
-    return json({ content: 'O Assistente de Orçamento aceita somente solicitações POST.' });
+    return json({ content: 'O Assistente de Orçamento aceita somente solicitações POST.' }, 405);
   }
 
   try {
@@ -17,7 +17,7 @@ exports.handler = async (event) => {
     if (!process.env.OPENAI_API_KEY) {
       return json({
         content: '🔎 DIAGNÓSTICO: a função RECOLL está publicada, mas a variável OPENAI_API_KEY não está disponível para esta função no Netlify. Não envie a chave aqui. Precisamos revisar apenas a variável de ambiente no Netlify.'
-      });
+      }, 500);
     }
 
     const system = `Você é o Assistente Inteligente de Orçamento da RECOLL, empresa brasileira de reforma, construção, manutenção e limpeza pós-obra.
@@ -50,7 +50,7 @@ Dados do orçamento atual (podem estar vazios): ${quoteContext}`;
     } catch (networkError) {
       return json({
         content: `🔎 DIAGNÓSTICO: a função RECOLL foi executada, mas não conseguiu alcançar a API da OpenAI. Detalhe técnico: ${networkError?.message || 'erro de rede'}.`
-      });
+      }, 502);
     }
 
     const requestId = response.headers.get('x-request-id') || '';
@@ -69,7 +69,7 @@ Dados do orçamento atual (podem estar vazios): ${quoteContext}`;
       const req = requestId ? ` Request ID: ${requestId}.` : '';
       return json({
         content: `🔎 DIAGNÓSTICO DA OPENAI: HTTP ${response.status}.${apiType}${apiCode} Mensagem: ${apiMessage}${req}`
-      });
+      }, 502);
     }
 
     let content = data?.output_text || '';
@@ -89,13 +89,13 @@ Dados do orçamento atual (podem estar vazios): ${quoteContext}`;
       const req = requestId ? ` Request ID: ${requestId}.` : '';
       return json({
         content: `🔎 DIAGNÓSTICO: a OpenAI respondeu com sucesso, mas não retornou texto para o Assistente.${req}`
-      });
+      }, 502);
     }
 
     return json({ content });
   } catch (e) {
     return json({
       content: `🔎 DIAGNÓSTICO DA FUNÇÃO: ocorreu um erro interno ao processar a solicitação. Detalhe: ${e?.message || 'erro desconhecido'}.`
-    });
+    }, 500);
   }
 };
