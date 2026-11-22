@@ -3331,7 +3331,7 @@ document.addEventListener('DOMContentLoaded',function(){
  $('recollMaterialsOverlay').addEventListener('click',e=>{if(e.target===$('recollMaterialsOverlay')){$('recollMaterialsOverlay').style.display='none';draft();}});
  $('recollMatSend').addEventListener('click',async()=>{
   const d=collect(),lines=d.materials.split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
-  if(!lines.length){alert('Digite os materiais antes de gerar o PDF.');return;} save();
+  if(!lines.length){alert('Digite os materiais antes de gerar o PDF.');return;}
   try{
    const loadPDF=()=>new Promise((resolve,reject)=>{if(window.jspdf&&window.jspdf.jsPDF)return resolve(window.jspdf.jsPDF);const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';sc.onload=()=>window.jspdf&&window.jspdf.jsPDF?resolve(window.jspdf.jsPDF):reject(new Error('Biblioteca PDF indisponível.'));sc.onerror=()=>reject(new Error('Não foi possível carregar o gerador de PDF.'));document.head.appendChild(sc);});
    const JsPDF=await loadPDF(),pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4'});
