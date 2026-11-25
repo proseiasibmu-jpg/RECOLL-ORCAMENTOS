@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>Backup RECOLL</title>
+<style>
+:root{color-scheme:light}*{box-sizing:border-box}body{margin:0;padding:22px;background:#f2f6ff;color:#172033;font:16px Arial,sans-serif}
+main{max-width:620px;margin:24px auto;background:#fff;border-radius:20px;padding:24px;box-shadow:0 8px 28px #183b7020}
+h1{margin:0 0 8px;color:#174ea6}p{line-height:1.5;color:#4b5563}.note{background:#fff7e6;border:1px solid #f3d28a;padding:12px;border-radius:12px}
+button{width:100%;border:0;border-radius:12px;padding:16px;margin-top:12px;background:#1758d4;color:white;font-weight:700;font-size:16px}
+#status{margin-top:14px;padding:12px;background:#f3f6fb;border-radius:12px;white-space:pre-wrap}
+small{color:#64748b}
+</style>
+</head>
+<body>
+<main>
+<h1>RECOLL — Cópia de segurança</h1>
+<p>Esta página prepara uma cópia local dos dados guardados neste aplicativo/navegador. O arquivo será baixado no aparelho; nada será enviado para um servidor.</p>
+<div class="note"><b>Importante:</b> abra esta página pelo mesmo aplicativo e endereço antigo em que seus orçamentos aparecem. Não limpe os dados nem desinstale o RECOLL.</div>
+<div id="status">Verificando armazenamento deste endereço…</div>
+<button id="backup" type="button">Baixar cópia de segurança</button>
+<p><small>O arquivo contém os registros e configurações encontrados no armazenamento local deste endereço. Guarde-o e não o compartilhe publicamente.</small></p>
+</main>
+<script>
+(function(){
+ const status=document.getElementById('status');
+ function collect(){
+  const data={format:'RECOLL_LOCAL_BACKUP',version:1,createdAt:new Date().toISOString(),origin:location.origin,items:{}};
+  let total=0;
+  for(let i=0;i<localStorage.length;i++){
+   const key=localStorage.key(i); if(!key) continue;
+   const value=localStorage.getItem(key);
+   data.items[key]=value; total++;
+  }
+  return {data,total};
+ }
+ function refresh(){
+  try{
+   const x=collect();
+   const keys=Object.keys(x.data.items);
+   const records=keys.map(k=>{try{const v=JSON.parse(x.data.items[k]);return Array.isArray(v)?k+': '+v.length+' registros':k;}catch(e){return k;}});
+   status.textContent='Endereço: '+location.origin+'\nChaves encontradas: '+x.total+'\n'+(records.length?records.join('\n'):'Nenhum dado encontrado neste endereço.');
+  }catch(e){status.textContent='Não foi possível ler o armazenamento: '+e.message;}
+ }
+ document.getElementById('backup').addEventListener('click',function(){
+  try{
+   const x=collect();
+   if(!x.total){alert('Não encontrei dados neste endereço. Não foi gerado backup.');return;}
+   const blob=new Blob([JSON.stringify(x.data,null,2)],{type:'application/json'});
+   const url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download='RECOLL-backup-'+new Date().toISOString().slice(0,10)+'.json';
+   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);
+   status.textContent='Backup preparado com '+x.total+' itens. Confira se o arquivo foi baixado no aparelho.';
+  }catch(e){alert('Falha ao criar backup: '+e.message);}
+ });
+ refresh();
+})();
+</script>
+</body>
+</html>
