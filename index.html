@@ -697,7 +697,7 @@ async function recollAskAI(){
  button.disabled=true;button.textContent='Analisando serviço...';
  answer.innerHTML='<div class="small">Estou avaliando a mão de obra, produtividade, dificuldade e preço comercial.</div>';
  try{
-  const response=await fetch('/.netlify/functions/recoll-assistente',{
+  const response=await fetch('/api/recoll-assistente',{
    method:'POST',headers:{'Content-Type':'application/json'},
    body:JSON.stringify({messages:[{role:'user',content:request}],quoteContext:JSON.stringify(context)})
   });
