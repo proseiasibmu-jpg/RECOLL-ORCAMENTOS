@@ -4,6 +4,13 @@
 <head>
 <meta charset="utf-8"/>
 <meta content="width=device-width,initial-scale=1" name="viewport"/>
+<meta name="theme-color" content="#1457d9"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="icon" type="image/svg+xml" href="/icons/recoll-192.svg"/>
+<link rel="apple-touch-icon" href="/icons/recoll-192.svg"/>
 <title>RECOLL — Orçamento Inteligente v10</title>
 <style>
 *{box-sizing:border-box}body{font-family:Arial,sans-serif;margin:0;background:#f3f6fb;color:#172033}
@@ -3351,5 +3358,13 @@ document.addEventListener('DOMContentLoaded',function(){
 })();
 </script>
 
+<script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () {
+    navigator.serviceWorker.register("/service-worker.js", {scope:"/"})
+      .catch(function (err) { console.warn("RECOLL: não foi possível registrar o Service Worker", err); });
+  });
+}
+</script>
 </body>
 </html>
